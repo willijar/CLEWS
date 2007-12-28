@@ -1,0 +1,25 @@
+
+* go through EE401B and do assessments and check analysis
+
+* fix docutils bug
+  http://heisenberg.aston.ac.uk:8080/discussions/aston.ee4000.2007/532
+
+* on emails indicate if an assessment is finished.
+
+* more help notes for students
+
+* web dav access
+
+* note taking ability/discussion (article state storage??)
+
+* Latex output for docutils
+
+* write help notes for staff
+
+* status management
+
+* quota management?
+
+* in place audio/video file presentation
+
+* rss for users goals
