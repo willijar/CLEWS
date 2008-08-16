@@ -30,7 +30,7 @@
   (:import-from :jarw.lib #:when-bind)
   (:export #:defform #:make-form #:register-form #:markup-form #:find-form
 	   #:form-data #:date #:submitted-action #:input-validation
-	   #:output-value #:do-form
+	   #:output-value #:do-form #:do-form-with-confirmation
 	   #:form-mark #:mark-form-data #:form-analysis-markup
 	   #:get-form-element #:validate-element-data #:invalid-input #:date
 	   #:+countries+ #:+uk-countries+ #:+eu-countries+))

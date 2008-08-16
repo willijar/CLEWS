@@ -316,3 +316,54 @@ object"
                 ,(markup-form (form) (if condition request (data))
                               (if (not condition) :text))))
             (markup-form form (data) disabled-p))))))
+
+(defun do-form-with-confirmation
+    (&key data form handler request
+     (on-success "Form submission Successful.")
+     (on-failure "For submission not accepted due to an error in
+     your input. Please correct and try again."))
+  "Return markup handling a single form markupelement , with a confirmation
+message if submitted data successfully accepted.
+
+Keyword arguments:
+data - the initial data property list or a function of no arguments
+       which returns it.
+form - the form designator.
+       Can be either the form itself, a function of no arguments to return it,
+       a name of a registered form or if nil the registered form for the data.
+       May be called more than once.
+handler - function called to process the data submitted from the form.
+       It should return the accepted data for display.
+request - the http request object
+on-success - confirmation message designator, a string, markup sexp
+       or function which takes the data as an argument.
+       Called only if handler is successful.
+on-failure - message designator called if data submission no successful."
+  (let* ((data
+          (typecase data
+            (function (funcall data))
+            (t data)))
+         (form
+          (typecase form
+            (null (find-form data))
+            (function (funcall form))
+            (atom (find-form form))
+            (t form))))
+      (when form
+        (if (submitted-action form request)
+            (multiple-value-bind(data condition)
+                (form-data form request)
+              (unless condition
+                (handler-case
+                    (setf data (funcall handler data))
+                  ((error(c) (setf condition c)))))
+              (let ((msg (if condition on-failure on-success)))
+                (if (functionp msg)
+                    (funcall msg data)
+                    `(div
+                      ,(if (stringp msg) `(p ,msg) msg)
+                      (hr)
+                      ,(when condition
+                             `((p :class :error) ,condition))
+                      (markup-form form data (not condition))))))
+            (markup-form form data)))))
