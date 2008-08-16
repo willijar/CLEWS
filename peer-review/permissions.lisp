@@ -116,24 +116,26 @@ used, otherwise they will be calculated"
                     (format-time nil (+ (created article)
                                         (reviewer-delay app))))))
           ((has-permission :tutor app user) t)
-          ((> (length (reviews article)) (max-no-reviews app))
+          ((>= (length (reviews article)) (max-no-reviews app))
            (values nil
-                   (format nil "At most ~D reviews are allowed per article" (max-no-reviews app))))
+                   (format nil "At most ~D reviews are allowed per article"
+                           (max-no-reviews app))))
           ((has-permission :student app user)
-           (if (is-author article username)
-               (values
+           (cond
+             ((is-author article username)
+              (values
+               nil
+               (format
                 nil
-                (format
-                 nil
-                 "~S cannot review the article on ~A which they have authored."
-                 username (title article)))
-               (if (is-reviewer article username)
-                   (values
-                    nil
-                    (format nil
-                            "~S cannot review the article on ~A more than once."
-                            username (title article)))
-                   t)))
+                "~S cannot review the article on ~A which they have authored."
+                username (title article))))
+             ((is-reviewer article username)
+              (values
+               nil
+               (format nil
+                       "~S cannot review the article on ~A more than once."
+                       username (title article))))
+             (t)))
           (t (values nil
                      (format nil "~S is not a student or tutor." username))))))
 

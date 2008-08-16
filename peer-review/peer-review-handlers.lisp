@@ -562,12 +562,26 @@ should correspond to the file format." )
                           "Back to Editing Article"))))
                   `(p ,reason)))))))))
 
-(defmethod marks-handler((app peer-review) request role)
-  (let* ((roles (cdr (assoc :student (inet.acl::acl app))))
-         (role (when (> (length role) 0)
-                 (intern (string-upcase role) "KEYWORD")) ))
-    (let* ((authors (sort (if role
-                              (get-users role (users app))
+(cl-ppcre::define-parse-tree-synonym role
+    (:sequence skip-spaces (:register (:alternation token quoted-string))))
+
+(defmethod parse-input((spec (eql 'roles)) (value string)
+                       &key &allow-other-keys)
+  (let ((roles nil))
+    (cl-ppcre:do-register-groups(role) ('role value)
+      (push
+       (if (eql (elt role 0) #\")
+           (unquoted role)
+           (intern (string-upcase role) :keyword))
+      roles))
+    (nreverse roles)))
+
+(defmethod marks-handler((app peer-review) request rolest)
+  (let* ((allroles (cdr (assoc :student (inet.acl::acl app))))
+         (roles (when (> (length rolest) 0)
+                  (jarw.parse:parse-input 'roles  rolest))))
+    (let* ((authors (sort (if roles
+                              (get-users roles (users app))
                               (authors app))
                           #'string<))
            (fields '(:mark :raw-mark :no-articles :no-reviews :article-mark
@@ -607,9 +621,9 @@ should correspond to the file format." )
                         (mapcan
                          #'(lambda(role)
                              (list (list (string role) (string role))))
-                         roles )))
-               :on-url (string-upcase role))
-             (h1 "Marks for " ,(or role "All Authors"))
+                         allroles )))
+               :on-url (string-upcase rolest))
+             (h1 "Marks for " ,(or roles "All Authors"))
              (p "To select a subset of students add their role onto
 the url e.g. .../marks/it2002.")
              ,(markup-form form data)

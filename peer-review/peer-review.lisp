@@ -317,6 +317,7 @@ p-list with atttributes :mark :raw-mark :no-articles :no-reviews
                                :last-post last-post
                                :no-reviews-received no-reviews-received
                                :feedback-mark-received feedback-mark))))))
+      (map 'nil #'author-contribution authors)
       (when (listp moderation)
         (setq moderation
               (mean (mapcar
@@ -346,7 +347,7 @@ p-list with atttributes :mark :raw-mark :no-articles :no-reviews
                             (when (string= (author idx) author)
                               (let ((m (moderated-mark idx)))
                                 (when m (list (moderated-mark idx))))))
-                        indx)
+                        (copy-list indx))
                        #'>)))
             (setf (getf (gethash author results) :mark)
                   (if moderated-marks
