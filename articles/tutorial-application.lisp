@@ -302,7 +302,8 @@ clockTick();
            (list "Mark" '% #'mean-with-nil #'<-with-nil))
           users
           #'(lambda(user)
-              (let ((state (user-state article user)))
+              (let ((state (user-state article user))
+                    (*current-user* user))
                 (list
                  (state-value :time-spent state)
                  (state-value :last-visit-time state)
@@ -332,7 +333,8 @@ clockTick();
                                (knowledge
                                 (state-value
                                  (docutils.assessment::name assessment)
-                                 state)))
+                                 state))
+                               (*current-user* user)) ;; needed so correctly do deadlines
                         (list
                          (clews.assessment:timetaken knowledge)
                          (clews.assessment:completed knowledge)
@@ -350,7 +352,8 @@ clockTick();
                   (list (list "Mark" '% #'mean-with-nil #'<-with-nil))
                   users
                   #'(lambda(user)
-                      (list (mark user (cons article (children article)))))
+                      (let ((*current-user* user))
+                        (list (mark user (cons article (children article))))))
                   sort))))))))
 
 (defmethod actions((article tutorial-article))
@@ -392,5 +395,59 @@ clockTick();
           (prog1
               (errors *a*)
             (princ (first (errors *a*))))))
+
+|#
+
+#|
+
+% dump routines to dump page fragments as html files and to "recreate" images in another directory
+
+(defvar *media-server*
+  (make-instance
+   'jarw.media:media-server
+   :path "/home/willijar/tmp/images/"))
+
+(defvar *tutorials*
+  (make-instance
+   'clews.articles:tutorial-collection
+   :id :tutorials
+   :acl '((:view . (:all))
+          (:edit . ("willijar"))
+          (:admin . ("willijar")))
+   :class 'clews.articles:tutorial-article
+   :path (translate-logical-pathname #p"clews:tutorials;")
+   :file-type "rst"))
+
+(defun do-one(name &optional (article (get-dictionary name *tutorials*)))
+  (let ((jarw.media:*media-server* *media-server*)
+        (jarw.media:*media-base-url* "/x-media-base/")
+        (inet.acl::*current-user*
+         (get-dictionary "willijar" aston::*user-source*)))
+    (multiple-value-bind(article-head article-body) (html-parts article)
+      article-body)))
+
+
+(defun do-all()
+(let ((jarw.media:*media-server* *media-server*)
+      (jarw.media:*media-base-url* "/x-media-base/")
+      (inet.acl::*current-user*
+       (get-dictionary "willijar" aston::*user-source*)))
+  (map-dictionary
+   #'(lambda(name article)
+       (princ name)
+       (multiple-value-bind(article-head article-body) (html-parts article)
+         (with-open-file(os
+                         (merge-pathnames name
+                                          (make-pathname :directory "/home/willijar/tmp/html" :type "html"))
+                         :direction :output
+                         :if-does-not-exist :create
+                         :if-exists :overwrite)
+           (write-string article-body os)))
+       (terpri))
+   *tutorials*)))
+
+
+
+
 
 |#

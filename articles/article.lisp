@@ -263,13 +263,6 @@ article"))
   (slot-makunbound instance 'document)
   text)
 
-;; articles on a collection share reader and writer
-(defmethod document-reader((article article))
-  (document-reader (collection article)))
-
-(defmethod document-writer(format (article article))
-  (document-writer format (collection article)))
-
 (defun resolve-article-reference(article node &optional (nameids #'nameids))
   (let ((collection (collection article))
         (refname (docutils:attribute node :refname)))
@@ -330,65 +323,11 @@ article"))
       (let ((*search-path* (list (path-to-media article)))
             (*unknown-reference-resolvers*
              (cons #'resolve-rfc-reference
-                   (cons #'(lambda(node) (resolve-article-reference article node))
+                   (cons #'(lambda(node)
+                             (resolve-article-reference article node))
                          *unknown-reference-resolvers*))))
         (setf (document article)
               (read-document article (document-reader article))))))
-
-(jarw.debug::debug-on)
-(defun bootstrap-articles(collection)
-  "Efficiently bootstrap documents in articles.
-It is highly recommended that this run after the collection is made."
-  (let ((deferred (make-hash-table)))
-    ;; read documents and keep track of unresolved targets
-    ;; if no unresolved can store document in artcle
-    (jarw.debug::debug-log "Bootstapping ~S ...." collection)
-    (map-dictionary
-     #'(lambda(id article)
-         (jarw.debug::debug-log " ~A" id)
-         (unless (slot-boundp article 'document)
-           (let* ((unresolved nil)
-                  (*unknown-reference-resolvers*
-                   (cons #'resolve-rfc-reference
-                         (cons
-                          #'(lambda(node) (push node unresolved) t)
-                          *unknown-reference-resolvers*)))
-                  (*search-path* (list (path-to-media article))))
-             (let ((document
-                    (read-document article (document-reader article))))
-             (if unresolved
-                 (setf (gethash article deferred) (cons document unresolved))
-                 (setf (document article) document))))))
-     collection)
-    ;; now try and resolve all those unresolved targets.
-    (jarw.debug::debug-log " Resolving targets ...")
-    (maphash
-     #'(lambda(article record)
-         (let* ((document (car record))
-               (unresolved (cdr record))
-               (nameids (slot-value article 'nameids))
-               (ids (docutils::ids document))
-               (refnames (docutils::refnames document))
-               (refids (docutils::refids document))
-               (*unknown-reference-resolvers*
-                (cons #'(lambda(node)
-                          (resolve-article-reference
-                           article node
-                           #'(lambda(a) (slot-value a 'nameids))))
-                      *unknown-reference-resolvers*)))
-           (jarw.debug::debug-log " ~A (~D)" (id article) (length unresolved))
-           (docutils::do-transforms
-               (list
-                #'(lambda(document)
-                    (declare (ignore document))
-                    (dolist(target unresolved)
-                      (unless (docutils:resolved target)
-                        (docutils.transform::resolve-indirect-target
-                         target nameids ids refnames refids)))))
-             document)
-           (setf (document article) document)))
-     deferred)))
-(jarw.debug::debug-off)
 
 (defmethod read-document :around ((article article) reader)
   "Update errors and targets from a newly read document"

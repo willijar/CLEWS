@@ -1,4 +1,4 @@
-;; $Id: tutorial-articles.lisp,v 1.1 2007/07/26 08:55:10 willijar Exp willijar $
+M;; $Id: tutorial-articles.lisp,v 1.1 2007/07/26 08:55:10 willijar Exp willijar $
 ;; Tutorial Articles
 ;; Copyright (C) 2006 Dr. John A.R. Williams
 
@@ -88,13 +88,13 @@
 
 (defclass tutorial-article(article)
   ((prerequisites-field
-     :type list
+    :type list
     :format (article-weights :unbound-if-nil t)
     :field-name "prerequisites"
     :documentation  "parsed field of direct prerequisites")
    (outcomes-field
     :type list
-    :format (article-weights :unbound-if-nil t) :field-name "outcomes"
+    :format article-weights :field-name "outcomes"
     :documentation "Parsed field of direct-outcomes")
    (children-field  :type list
              :format (articles :unbound-if-nil t) :field-name "children"
@@ -141,6 +141,7 @@ be considered completed")
    (:documentation "An article for a tutorial"))
 
 
+
 (defmethod parsed-field-form-element((slot jarw.parse::parsed-slot-mixin)
                                      (article tutorial-article))
   (case (jarw.mop:slot-definition-name slot)
@@ -175,6 +176,10 @@ be considered completed")
 
 (defgeneric update-relationships(article)
   (:documentation "Update the cached relationships for an article"))
+
+(defmethod update-instance-from-record :after ((article tutorial-article))
+  (unless (bootstrapping-p (collection article))
+    (update-relationships article)))
 
 (defmethod (setf form-data):after ((data list) (article tutorial-article))
   (update-relationships article))
@@ -282,8 +287,10 @@ be considered completed")
                        errors)
                  nil)
                (article(id)
-                 (or (get-article id collection :if-does-not-exist nil)
-                     (err "Related article ~S does not exist." id))))
+                 (if (equalp id (id article))
+                     article
+                     (or (get-article id collection :if-does-not-exist nil)
+                         (err "Related article ~S does not exist." id)))))
         (when (slot-boundp article 'prerequisites-field)
           (setf relationship 'direct-prerequisites)
           (dolist(item (slot-value article 'prerequisites-field))
@@ -296,18 +303,12 @@ be considered completed")
         (when (slot-boundp article 'outcomes-field)
           (setf relationship 'direct-outcomes)
           (dolist(item (slot-value article 'outcomes-field))
-            (debug-log "article=~S" article)
             (let ((other (article (car item))))
               (when other
-                (debug-log "other =~S ~S" other (cdr item))
-
                 (if (allowed-outcome-p article other)
-                    (progn
-                      (debug-log "Boo")
-                      (push (cons other (cdr item)) direct-outcomes))
+                      (push (cons other (cdr item)) direct-outcomes)
                     (err "~S not allowed as an outcome of ~S"
                          (id other) (id article)))))))
-        (debug-log "End with outcomes=~S" direct-outcomes)
         (when (slot-boundp article 'children-field)
           (setf relationship 'direct-children)
           (dolist(item (slot-value article 'children-field))
@@ -317,8 +318,6 @@ be considered completed")
                     (push other  direct-children)
                     (err "~S not allowed as a child of ~S"
                          (id other) (id article))) ))))))
-    (debug-log "End with outcomes=~S" direct-outcomes)
-
     (setf direct-prerequisites (nreverse direct-prerequisites)
           direct-outcomes (nreverse direct-outcomes)
           direct-children (nreverse direct-children))))
@@ -804,7 +803,8 @@ possible new ones"
 
 (defmethod default-deadline-date((questionnaire article-questionnaire))
   (or (call-next-method)
-      (deadline-date *current-user* (article questionnaire))))
+      (deadline-date *current-user* (article questionnaire))
+      ))
 
 (defmethod default-feedback-date((questionnaire article-questionnaire))
   (or (call-next-method)
@@ -816,7 +816,7 @@ possible new ones"
 
 (defmethod feedback-date(knowledge (questionnaire article-questionnaire))
   (declare (ignore knowledge))
-  (default-deadline-date  questionnaire))
+  (default-feedback-date  questionnaire))
 
 (defmethod errors :before ((article tutorial-article))
   ;; ensure errors from parsed document are loaded
@@ -990,3 +990,67 @@ report."
                        (title (cdr line)))))))
        (some #'second reports))))))
 
+(defun set-deadlines(collection user articlename newdeadline
+                     &key (recurse t))
+  (let* ((article (get-dictionary articlename collection))
+         (deadline (jarw.parse:parse-input 'date newdeadline))
+         (userstate (user-state collection user))
+         (articles (if recurse
+                      (cons article (children article))
+                      (list article))))
+    (mapcar
+     #'(lambda(article)
+         (let ((astate (user-state article userstate)))
+           (mapcar
+            #'(lambda(assessment)
+                (let* ((knowledge (assessment-knowledge astate assessment))
+                       (d (deadline-date knowledge assessment)))
+                  (format t "~S~%~S~%~S~%"
+                          article
+                          assessment
+                          knowledge)))
+            (assessments article))))
+     articles)))
+
+(defmethod docutils.parser.rst::title((source article))
+  (title source))
+
+(defmethod docutils.parser.rst::subsections((source tutorial-article))
+  (direct-children source))
+
+(defun insert-tutorial-metadata(source reader parent-node)
+  (when (typep parent-node 'docutils.nodes:document)
+    (docutils.parser.rst::insert-metadata source reader parent-node)))
+
+(defclass recursive-article-reader(article-rst-reader)
+  ()
+  (:default-initargs
+   :pre-parse-hooks
+      (list #'docutils.parser.rst::insert-title #'insert-tutorial-metadata)
+    :post-parse-hooks
+    (list #'docutils.parser.rst::read-subsections))
+  (:documentation "Article reader which will recurse down subsections"))
+
+
+(defun full-document(article)
+  (let ((*search-path* (list (path-to-media article)))
+        (*unknown-reference-resolvers*
+         (cons #'resolve-rfc-reference
+               (cons #'(lambda(node) (resolve-article-reference article node))
+                     *unknown-reference-resolvers*))))
+    (read-document article (make-instance 'recursive-article-reader))))
+
+
+
+
+
+
+#|
+
+(in-package :clews.articles)
+(defvar *a* (get-dictionary "pulse-modulation" aston::*tutorials*))
+
+
+(defvar *w* (make-instance 'article-latex-writer))
+(docutils:write-document *w* (document *a*) *standard-output*)
+|#

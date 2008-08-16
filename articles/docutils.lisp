@@ -16,7 +16,7 @@
 ;;; which willuse locks to protect against reentrance
 (in-package :clews.articles)
 
-(defclass article-rst-reader(rst-reader)
+(defclass article-rst-reader(docutils.parser.rst::extended-rst-reader)
   ()
   (:documentation "Specialisation parser for articles"))
 
@@ -73,16 +73,23 @@ list of part names, write these sections to the streams")
   (:method((writer article-writer) document sections)
     (with-lock((mutex writer)) (call-next-method))))
 
+(defclass article-latex-writer(latex-writer article-writer)
+  ()
+  (:documentation "latex specific writer for articles"))
+
 (defgeneric document-reader(entity)
   (:documentation "Return a document reader for an entity")
   (:method(entity)
     (declare (ignore entity))
     (make-instance 'article-rst-reader)))
 
-(defgeneric document-writer(format entity)
+(defgeneric document-writer(format entity &key &allow-other-keys)
   (:documentation "Return a document writer for an entity and format")
-  (:method((format (eql :html)) article)
+  (:method((format (eql :html)) article &key &allow-other-keys)
     (make-instance 'article-html-writer
+                   :show-errors (has-permission :edit article)))
+  (:method((format (eql :latex)) article &key &allow-other-keys)
+    (make-instance 'article-latex-writer
                    :show-errors (has-permission :edit article))))
 
 

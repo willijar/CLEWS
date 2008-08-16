@@ -43,6 +43,9 @@ there is no article"))
 (defclass article-collection(dictionary:dictionary clews::component)
   ((path :type pathname :initarg :path :reader root-path
          :documentation "Root Path")
+   (bootstrapping-p
+    :type boolean :initform nil :accessor bootstrapping-p
+    :documentation "True if in bootstrapping state")
    (article-class :type symbol :initform 'article :initarg :class
                   :reader article-class
                   :documentation "Class of article to be constructed")
@@ -51,16 +54,6 @@ there is no article"))
    (articles :type hash-table :initform (make-hash-table :test #'equal)
              :reader articles)
    (user-state :type directory-dictionary)
-   (document-reader
-    :type docutils:reader
-    :reader document-reader
-    :documentation
-    "document reader to be used for articles in this collection")
-   (document-writers
-    :initform nil
-    :type docutils:writer
-    :documentation
-    "document writers to be used for articles in this collection")
    (document-settings
     :documentation "Cons of Settings for documents and when last read"))
   (:documentation "A collection of articles stored on the file system"))
@@ -75,8 +68,6 @@ there is no article"))
   (dolist(subdir '("articles" "media" "users"))
     (ensure-directories-exist
      (subdir (root-path collection) (list subdir))))
-  (setf (slot-value collection 'document-reader)
-        (document-reader (find-class (article-class collection))))
   (flet ((make-user-state(path)
            (make-instance 'user-state :file path)))
     (setf (slot-value collection 'user-state)
@@ -85,13 +76,8 @@ there is no article"))
            :directory (subdir (root-path collection) '("users"))
            :reader #'make-user-state
            :writer #'(lambda(value path) (declare (ignore value path)))
-           :default #'make-user-state))))
-
-(defmethod document-writer(format (collection article-collection))
-  (or (getf (slot-value collection 'document-writers) format)
-      (setf  (getf (slot-value collection 'document-writers) format)
-             (document-writer format
-                              (find-class (article-class collection))))))
+           :default #'make-user-state)))
+  (bootstrap-articles collection))
 
 (defgeneric path-to-articles(collection)
   (:method((collection article-collection))
@@ -167,5 +153,59 @@ there is no article"))
      #'(lambda(a) (matches scanner a))
      collection)))
 
-
-
+(defgeneric bootstrap-articles(collection)
+  (:method :before ((collection article-collection))
+           (setf (bootstrapping-p collection) t))
+  (:method :after ((collection article-collection))
+           (setf (bootstrapping-p collection) nil))
+  (:method ((collection article-collection))
+    "Efficiently bootstrap documents in articles.
+It is highly recommended that this run after the collection is made."
+    (let ((deferred (make-hash-table)))
+      ;; read documents and keep track of unresolved targets
+      ;; if no unresolved can store document in artcle
+      (format t "%Bootstapping ~S ....~%" collection)
+      (map-dictionary
+       #'(lambda(id article)
+           (format t "% ~A~%" id)
+           (unless (slot-boundp article 'document)
+             (let* ((unresolved nil)
+                  (*unknown-reference-resolvers*
+                   (cons #'resolve-rfc-reference
+                         (cons
+                          #'(lambda(node) (push node unresolved) t)
+                          *unknown-reference-resolvers*)))
+                  (*search-path* (list (path-to-media article))))
+             (let ((document
+                    (read-document article (document-reader article))))
+             (if unresolved
+                 (setf (gethash article deferred) (cons document unresolved))
+                 (setf (document article) document))))))
+     collection)
+    ;; now try and resolve all those unresolved targets.
+    (maphash
+     #'(lambda(article record)
+         (let* ((document (car record))
+                (unresolved (cdr record))
+                (nameids (slot-value article 'nameids))
+                (ids (docutils::ids document))
+                (refnames (docutils::refnames document))
+                (refids (docutils::refids document))
+                (*unknown-reference-resolvers*
+                 (cons #'(lambda(node)
+                           (resolve-article-reference
+                            article node
+                            #'(lambda(a) (slot-value a 'nameids))))
+                       *unknown-reference-resolvers*)))
+           (jarw.debug::debug-log " ~A (~D)" (id article) (length unresolved))
+           (docutils::do-transforms
+               (list
+                #'(lambda(document)
+                    (declare (ignore document))
+                    (dolist(target unresolved)
+                      (unless (docutils:resolved target)
+                        (docutils.transform::resolve-indirect-target
+                         target nameids ids refnames refids)))))
+             document)
+           (setf (document article) document)))
+     deferred))))
