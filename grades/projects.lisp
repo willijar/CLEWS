@@ -243,8 +243,8 @@ a url to the student details."))
                                (title app)))
       ,@(mapcar
          #'(lambda(func) (funcall func app request rest))
-         (list #'supervisor-home-handler
-               #'tutor-home-handler
+         (list #'tutor-home-handler
+               #'supervisor-home-handler
                #'student-home-handler))))))
 
 ;; table format requested by David Web
@@ -291,31 +291,36 @@ listing"
       (notevery #'mark (module-marks p))))
 
 (defmethod tutor-home-handler((app projects-manager) request rest)
-  (unless (has-permission :tutor app) (return-from tutor-home-handler))
-  (let ((username (username *current-user*)))
+  (let* ((username (username *current-user*))
+         (projects  (mapcan
+                    #'(lambda(p) (when (and (active (student p))
+                                 (some
+                                  #'(lambda(m)
+                                      (and (string= username (modified-by m))
+                                           (not (mark m))))
+                                  (marks p)))
+                        (list p)))
+                    (allocated-projects (db app)))))
+    (unless projects (return-from tutor-home-handler))
     `((section :title "Projects to Assess")
+      (p "List of projects for which there are open assessments that require completion by you.")
       ,(projects-table
-        (mapcan
-         #'(lambda(p) (when (project-active-p p) (list p)))
-         (assessors-project-records (db app) username))
+        projects
         :status
         #'(lambda(p)
-            `((br) "| "
-              ,@(mapcar
-                 #'(lambda(m)
-                     (when (string= username (modified-by m))
-                       `((a :href ,(format nil "../assessments/~A/~A"
-                                           (assessmentid m)
-                                           (studentid m)))
-                         ,(if (feedback m) "Edit " "Add ")
-                         ,(title (assessment m)) " | ")))
-                 (current-marks (marks p)))))))))
+            `((table
+               (tr ((th :colspan 3) "Assessment") (th "Assessor") (th "Deadline"))
+
+ ,@(assessor-form-rows app p :relative "../"))))))))
+
+
 
 (defmethod supervisor-home-handler((app projects-manager) request rest)
   (unless (has-permission :supervisor app)
     (return-from supervisor-home-handler))
   (let ((username (username *current-user*)))
     `((section :title "Supervision")
+      (p "List of all projects you have or are supervising")
       ,(projects-table
         (sort
          (supervisors-project-records (db app) username)
@@ -435,7 +440,8 @@ listing"
     ,@(user-choices app (assessor-role project mark))))
 
 (defun assessor-form-rows(app project
-                          &optional
+                          &key
+                          (relative "../../")
                           (marks (current-marks project)))
   (mapcar
    #'(lambda(m)
@@ -444,7 +450,8 @@ listing"
           ,(if (or (can-edit app m)
                    (and (can-view app m) (feedback m)))
                `((a :href
-                  ,(format nil "../../assessments/~A/~A"
+                  ,(format nil "~Aassessments/~A/~A"
+                           relative
                            (assessmentid m)
                            (studentid m)))
                  ,(moduleid (assessment m)) ": " ,(title (assessment m)))
@@ -452,11 +459,13 @@ listing"
           (td ,(assessment-type (assessment m)))
           ((td :align :right)
            ,(format-percentage (weighting (assessment m))))
-          (td ,(assessor-choice-field app project m)))))
+          (td ,(assessor-choice-field app project m))
+          (td ,(jarw.parse::format-output 'jarw.parse::date (deadline-date m))) )))
    marks))
 
 (defun assessors-update(app data marks)
   (dolist(mark marks)
+    (update-instance-from-records mark)
     (when (can-edit-assessor app mark)
       (let ((assessor (getf data (assessor-fieldname mark) :none)))
         (unless (eql assessor :none)
@@ -464,7 +473,7 @@ listing"
           (update-records-from-instance mark))))))
 
 (defun do-assessor-form(app project request &optional disabled)
-  (let ((marks (current-marks project)))
+  (let ((marks (mapcar #'update-instance-from-records (current-marks project))))
     (do-form
         #'(lambda()
             (mapcan
@@ -474,8 +483,8 @@ listing"
           `((form :method :post)
             (table
              (tr  ((th :colspan 2) "Assessment")
-              (th "Weighting") (th "Assessor"))
-             ,@(assessor-form-rows app project marks)
+              (th "Weighting") (th "Assessor") (th "Due"))
+             ,@(assessor-form-rows app project :marks marks)
              (tr ((td :colspan 4 :align :center)
                   ((input :type :submit :name "Update Assessors"
                           :value "Update Assessors")))))))
@@ -567,8 +576,7 @@ listing"
                       projectid))))
     (let ((cmd (car (form-values "action" request))))
       (when (and cmd (not (string= cmd "Yes")))
-        (return-from delete-project-handler
-          (redirect request (format nil "../~A/" projectid))))
+          (redirect request (format nil "../~A/" projectid)))
       `(html
         (head (title "Delete Project " ,projectid))
         (body
@@ -734,6 +742,7 @@ the student has not made any selections.")
                        (when (and (notevery #'mark (module-marks project))
                                   (active (student project))
                                   (notevery #'mark (marks project)))
+                         (update-instance-from-records project)
                          (list project)))
                    (allocated-projects (db app)))))
     `(html

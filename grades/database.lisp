@@ -24,6 +24,26 @@
 (defvar *refresh* t)
 (defvar *caching* nil)
 
+(defgeneric cached-slots(entity)
+  (:documentation "Return a list of the cached field to be unbound when instance is updated from record")
+  (:method(entity) nil))
+
+(defgeneric refresh-instance(entity)
+  (:documentation "Refresh instacne when updated from record")
+  (:method(entity)
+    (mapcar #'(lambda(slot) (slot-makunbound entity slot))
+            (cached-slots entity))))
+
+(def-view-class view-with-cached-slots()
+  ()
+  (:documentation "A view class with some cached slots to be invalidated when instance is updated from record"))
+
+(defmethod update-instance-from-records
+    ((view view-with-cached-slots)
+     &key (database (clsql-sys::view-database view)))
+  (refresh-instance view)
+  (call-next-method))
+
 (defmacro def-view-lookup((accessor (name thisclass)) &key
                           class using (home-key using)
                           (foreign-key using)
@@ -96,7 +116,7 @@
   (print-unreadable-object (programme stream :type t :identity t)
      (format stream "~S"  (title programme))))
 
-(def-view-class student ()
+(def-view-class student (view-with-cached-slots)
   ((studentid :accessor studentid :type (string 9) :initarg :studentid
 	      :documentation "Unique Student ID (SUN)"
 	      :db-kind :key :db-constraints :not-null)
@@ -136,15 +156,8 @@
    (project :db-kind :virtual :type project))
   (:base-table students))
 
-
-(defmethod instance-refreshed((student student))
-  (mapcar #'(lambda(slot) (slot-makunbound student slot))
-          '(marks module-marks examboard-decisions project)))
-
-(defmethod update-instance-from-records((student student)
-                                        &key (database (clsql-sys::view-database student)))
-  (instance-refreshed student)
-  (call-next-method))
+(defmethod cached-slots((student student))
+  '(marks module-marks examboard-decisions project))
 
 (def-view-lookup(programme (student student))
     :class programme :using programmeid :set nil)
@@ -169,8 +182,10 @@
                'studentid (studentid student)))
       (when (or (not last)
                 (and (action d)
-                     (> (finish (examboard d)) (finish (examboard last)))
-                     (> (revision d) (revision last))))
+                     (or (> (finish (examboard d)) (finish (examboard last)))
+                         (and (= (finish (examboard d))
+                                 (finish (examboard last)))
+                              (> (revision d) (revision last))))))
         (setf last d)))
     last))
 
@@ -288,7 +303,7 @@ entity"))
   (or (has-permission :admin app user)
       (string= (username user) (modified-by item))))
 
-(def-view-class mark-base(with-revisions)
+(def-view-class mark-base(with-revisions view-with-cached-slots)
   ((attempt :reader attempt :type integer :initarg :attempt :initform 1
 	    :db-kind :key :db-constraints :not-null))
   (:documentation "A mix in class for mark type entities - with an
@@ -327,7 +342,6 @@ attempt field as well as with revisions"))
 
 (defmethod module((m mark))
   (module (assessment m)))
-
 
 (defmethod release-date((mark mark))
   (or (slot-value mark 'release-date) (release-date (assessment mark))))
@@ -479,6 +493,9 @@ For minor works 10% per day late"
                      :foreign-key (moduleid year))))
   (:base-table module_marks))
 
+(defmethod cached-slots((m module-mark))
+  '(marks))
+
 (def-view-lookup(module (module-mark module-mark))
     :class module :using (moduleid year) :set nil)
 
@@ -598,7 +615,7 @@ For minor works 10% per day late"
             (action decision)
             (argument decision))))
 
-(def-view-class project()
+(def-view-class project(view-with-cached-slots)
   ((projectid :accessor projectid :type integer  :db-kind :key
               :initarg :projectid)
    (studentid :accessor studentid :type (string 9)
@@ -620,6 +637,9 @@ For minor works 10% per day late"
    (submission-date :type timestamp :accessor submission-date :initform nil)
    (module-marks :db-kind :virtual :type list))
   (:base-table projects))
+
+(defmethod cached-slots((p project))
+  '(module-marks))
 
 (defgeneric moduleids(project)
   (:documentation "Return the moduleids associated with this project")

@@ -514,7 +514,10 @@ method as required"
                   (cons :not-found (format nil "Student ~A" studentid)))))))
     (cond
       ((> (length parts) 3) (throw 'response :not-found))
-      (student (assessment-feedback app request assessment student))
+      (student (if (and (not (has-permission '(:tutor :admin) app))
+                             (suspended student))
+                   (redirect request "../grades/" 302)
+                   (assessment-feedback app request assessment student)))
       (assessment (assessment-mark-handler app request assessment))
       (t (assessments-directory app request)))))
 
@@ -776,24 +779,25 @@ assessment"
          (navbar ,(menu app) :relative "../../")
          ((section :title ,title)
           ,(assessment-summary assessment)
-          ,@(when (and (can-edit app mark) (not (submission-date mark)))
-              (do-form nil
+          ,(when (and (can-edit app mark)  (not (submission-date mark)))
+              (do-form
+                 (list :date (submission-date mark))
                 `((form :method :post)
                    (table
                     (tr ((th :align :right :valign :top) "Submitted")
                         (td
                          ((input :datatype (date :fmt :short :nil-allowed t)
                                  :name :date)))
-                        (td ((input :type :submit :name :enter-submission-date :value "Set Submission Date"))))))
-                nil
+                        (td ((input :type :submit
+                                    :name :enter-submission-date
+                                    :value "Set Submission Date"))))))
+                (or (not (can-edit app mark))  (submission-date mark))
                 #'(lambda(data)
                     (let ((date (getf data :date)))
                       (when date
                         (setf (submission-date mark) date)
                         (update-records-from-instance mark))))
-                request))
-
-          ,@(if (can-view app mark)
+                request))          ,@(if (can-view app mark)
                 `( ,(do-form
                     #'(lambda() (feedback (car marks)))
                     #'(lambda() `(div (hr)
@@ -854,7 +858,10 @@ method as required. Takes moduleid and either a year or studentid"
                                       'year year 'moduleid moduleid))))
     (if module
         (if student
-            (module-mark-handler app module student)
+            (if (and (not (has-permission '(:tutor :admin) app))
+                     (suspended student))
+                (redirect request "../grades/" 302)
+                (module-mark-handler app module student))
             (module-report-handler app module))
         (redirect request "../assessments/"))))
 
@@ -1123,7 +1130,9 @@ module"
          (assessments
           (delete-duplicates
            (mapcar #'assessment
-                   (mapcan #'(lambda(s) (slot-makunbound s 'marks) (copy-list (marks s)))
+                   (mapcan #'(lambda(s)
+                               (update-instance-from-records s)
+                               (copy-list (marks s)))
                            students))
            :key #'assessmentid))
          (modules
