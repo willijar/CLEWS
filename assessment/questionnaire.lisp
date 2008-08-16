@@ -224,7 +224,7 @@ questionnaire, allocating them if need be"
    is to be counted or not (i.e. withing deadline etc)"
   (let* ((questions (questions knowledge questionnaire))
          (w (reduce #'+ (mapcar #'weighting questions))))
-    (if w
+    (if (and w (not (zerop w)))
         (/ (reduce #'+
                    (mapcar #'(lambda(q)
                                (* (weighting q) (question-mark q)))
