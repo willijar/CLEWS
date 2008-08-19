@@ -131,7 +131,8 @@
         (doc (second (assoc :documentation parts)))
         (entity (gensym)))
     (unless action (error "No command action defined for ~A" name))
-    `(setf (get ',name ',command-property)
+    `(eval-when(:compile-toplevel :load-toplevel :execute)
+       (setf (get ',name ',command-property)
            (make-instance
             'command
             ,@(when check `(:check (function (lambda(,@args) ,@check))))
@@ -140,7 +141,7 @@
             :documentation ,doc)
            (symbol-function ',name)
            #'(lambda(,entity &rest args)
-               (execute-command ',name ,entity args)))))
+               (execute-command ',name ,entity args))))))
 
 (defgeneric playback-commands(source command-processor &key log)
   (:documentation "Playback commands on command processor from a
