@@ -374,7 +374,7 @@ user according to keyword arguments"
                 (th "Mark (0-100)")
                 ((th :align :left)
                  ((input :size 3 :name :mark :value 0
-                         :datatype (integer :min 0 :max 100)))
+                         :datatype (integer :min 0 :max 100 :nil-allowed t)))
                  " Plagiarised"	((boolean :name :plagiarised)))))))
     ((textarea :rows 8 :cols 82 :name :body
       :datatype (string :strip-return t :word-count 5))) (br)
@@ -387,8 +387,11 @@ user according to keyword arguments"
   (let* ((in-reply-to (when in-reply-to (article in-reply-to group)))
          (form (submission-form in-reply-to (has-permission :tutor group) )))
     (multiple-value-bind (form-data condition) (form-data form request)
-      (if (and (or (getf form-data :submit) (getf form-data :preview))
-               (not condition) form-data)
+      (let ((preview-p (getf form-data :preview))
+            (submit-p (getf form-data :submit)))
+        (remf form-data :submit)
+        (remf form-data :preview)
+        (if (and (or preview-p submit-p) (not condition) form-data)
           (let ((message
                  (make-instance 'message
                                 :specifications *header-specifications*
@@ -420,14 +423,12 @@ user according to keyword arguments"
                          (setf (header-field :x-mark message) mark))))))
             (handler-case
                 (cond
-                  ((getf form-data :preview)
-                   (remf form-data :submit)
-                   (remf form-data :preview)
+                  (preview-p
                    `(div ,(markup-form form form-data)
                      ((section :title "Article Preview - article not saved")
                       ,@(view-message-content
                          message (has-permission :tutor group)))))
-                  (t
+                  (submit-p
                    (let ((n (post-article message group)))
                      (unless n (error "Post unsuccessful"))
                      (setf (article-mark :read n app group-name) t)
@@ -435,15 +436,14 @@ user according to keyword arguments"
                        (p "New Article "
                         ,(body (header-field :message-id message))
                         " posted successfully - see below.")
-                       ,@(view-message-content message (has-permission :tutor group))))))
+                       ,@(view-message-content message
+                                               (has-permission :tutor group))))))
               (error(c)
                 `((p :class :error) "Post unsuccessful" (br)
                   ,(format nil "~A" c))
-                (remf form-data :submit)
-                (remf form-data :preview)
                 (markup-form form form-data)
                 )))
-          (markup-form form nil)))))
+            (markup-form form form-data))))))
 
 (defun author(head)
 	(or (content (header-field :x-authenticated-author head))
