@@ -43,6 +43,14 @@ a url to the student details."))
            (:admin . (:admin))))
   (:documentation "Class for project management system"))
 
+(defmethod has-permission((action (eql :student)) (app projects-manager)
+                          &optional (entity *current-user*))
+  (when (call-next-method)
+    (let ((student (first (student-records *db* 'username (username entity)))))
+      (when (and student (suspended student))
+        (throw 'response
+          '(:forbidden . "You are on sanctions - please contact the office."))))))
+
 (defmethod assessor-role((p project) (a assessment))
   "Return the assessors role for given assessment on project"
   (cond ((or (string= (assessment-type a) "SUP")

@@ -28,6 +28,14 @@
            (:admin . (:admin))))
   (:documentation "Class for grade collation and management system"))
 
+(defmethod has-permission((action (eql :student)) (app grades-manager)
+                          &optional (entity *current-user*))
+  (when (call-next-method)
+    (let ((student (first (student-records *db* 'username (username entity)))))
+      (when (and student (suspended student))
+        (throw 'response
+          '(:forbidden . "You are on sanctions - please contact the office."))))))
+
 (defmethod published-methods ((app grades-manager) baseurl)
   (declare (ignore baseurl))
   `(,@(call-next-method)
@@ -304,6 +312,7 @@ Electronic Engineering\\\\
   (let ((is-tutor-p (has-permission :tutor app))
         (clsql::*default-caching* nil))
     (declare (special clsql::*default-caching*))
+    (unless is-tutor-p (assert-permission :student app))
     (multiple-value-bind(student-username form)
         (if is-tutor-p
             (let* ((form `((form :method :post :action "./")
@@ -319,6 +328,7 @@ Electronic Engineering\\\\
         (body
          (navbar ,(menu app) :on-url "grades/" :relative "../")
          ((section :title "Grades"))
+         (pre ,*current-user*)
          ,form
          ,(when student-username
                 (let ((student

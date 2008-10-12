@@ -27,7 +27,8 @@
   (:import-from :jarw.string #:split-string #:join-strings #:strcat)
   (:import-from :jarw.properties #:property-subset #:property)
   (:import-from :jarw.parse #:parse-number)
-  (:import-from :inet.access-control #:has-permission #:*current-user*
+  (:import-from :inet.access-control #:has-permission #:assert-permission
+                #:*current-user*
 		#:permission-denied-error #:acl #:access-controlled-entity)
   (:import-from :inet.http #:form-values #:query-values #:response #:redirect)
   (:import-from :clews.form
