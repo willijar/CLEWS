@@ -317,11 +317,10 @@ listing"
         :status
         #'(lambda(p)
             `((table
-               (tr ((th :colspan 3) "Assessment") (th "Assessor") (th "Deadline"))
+               (tr ((th :colspan 3) "Assessment") (th "Mark")
+                   (th "Assessor") (th "Deadline"))
 
  ,@(assessor-form-rows app p :relative "../"))))))))
-
-
 
 (defmethod supervisor-home-handler((app projects-manager) request rest)
   (unless (has-permission :supervisor app)
@@ -467,6 +466,8 @@ listing"
           (td ,(assessment-type (assessment m)))
           ((td :align :right)
            ,(format-percentage (weighting (assessment m))))
+          ((td :align :right)
+           ,(format-percentage (mark m)))
           (td ,(assessor-choice-field app project m))
           (td ,(jarw.parse::format-output 'jarw.parse::date (deadline-date m))) )))
    marks))
@@ -491,7 +492,7 @@ listing"
           `((form :method :post)
             (table
              (tr  ((th :colspan 2) "Assessment")
-              (th "Weighting") (th "Assessor") (th "Due"))
+              (th "Weighting") (th "Mark") (th "Assessor") (th "Due"))
              ,@(assessor-form-rows app project :marks marks)
              (tr ((td :colspan 4 :align :center)
                   ((input :type :submit :name "Update Assessors"
@@ -778,7 +779,7 @@ the student has not made any selections.")
                   #'(lambda(project)
                       `((table
                          (tr  ((th :colspan 2) "Assessment")
-                          (th "Weighting") (th "Assessor"))
+                          (th "Weighting") (th "Mark") (th "Assessor"))
                          ,@(assessor-form-rows app project )))))
                 ((input :type :submit
                   :name "Update Assessments"
