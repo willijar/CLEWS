@@ -652,7 +652,7 @@ Methods\\\\\\hline
 <tbody>"
                  ,@(mapcar
                     #'(lambda(a)
-                        (format nil "~%<row><entry>~A (~A)</entry><entry>~A</entry><entry>~A</entry><entry>~A</entry><entry>~AAssociate Dean for Postgraduate Programmes</entry></row>"
+                        (format nil "~%<row><entry>~A (~A)</entry><entry>~A</entry><entry>~A</entry><entry>~A</entry><entry>~A</entry></row>"
                                 (title a) (assessment-type a) (status a)
                                 (format-percentage (weighting a))
                                 (requirements a)
@@ -676,7 +676,7 @@ Learning and Teaching and Assessment Strategies to enable outcomes to be achieve
 </row>
 <row>
 <entry colname=\"learning\">Learning and Teaching Methods</entry>
-<entry colname=\"assessment\">Assessment MeAssociate Dean for Postgraduate Programmesthod</entry></row>
+<entry colname=\"assessment\">Assessment Method</entry></row>
 </thead>
 <tbody>
 "

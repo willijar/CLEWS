@@ -400,7 +400,7 @@ attempt field as well as with revisions"))
 (defmethod can-view(app (mark mark) &optional user)
   (or (has-permission '(:admin :tutor :supervisor) app user)
       (and (has-permission :student app user)
-	   (string= (studentid mark) (studentid user)))))
+           (string= (studentid mark) (studentid user)))))
 
 (defmethod can-edit(app (mark mark) &optional user)
   (or (has-permission :admin app user)
@@ -505,8 +505,8 @@ For minor works 10% per day late"
 
 (defmethod can-view(app (mark module-mark) &optional user)
   (or (has-permission '(:admin :tutor :supervisor) app user)
-      (and (has-permission ':student app user)
-	   (string= (studentid mark) (studentid user)))))
+      (and (has-permission :student app user)
+           (string= (studentid mark) (studentid user)))))
 
 (defmethod print-object((mark module-mark) stream)
   (print-unreadable-object (mark stream :type t :identity t)
