@@ -443,7 +443,7 @@ user according to keyword arguments"
                   ,(format nil "~A" c))
                 (markup-form form form-data)
                 )))
-            (markup-form form form-data))))))
+            (markup-form form nil))))))
 
 (defun author(head)
 	(or (content (header-field :x-authenticated-author head))
