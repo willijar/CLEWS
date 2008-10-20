@@ -25,16 +25,19 @@
     :documentation "Return Function which takes entity and args and
     carries out action")
    (undo-action :type function :initform nil :reader undo-action :initarg :undo
-                :documentation "Return a function which given entity
-                and args would undo the changes on entity - called
-                before command-action. If nil command cannot be
-                undone."))
+                :documentation "A function to return a function which
+                given entity and args would undo the changes on entity
+                - called before command-action. If nil command cannot
+                be undone."))
   (:documentation "Class representing a command. Each of the slots
   contains a function which takes the entity and other args."))
 
 (defmethod describe-object((object command) stream)
   (format stream "~&~S is a command.~@[~%~A~]"
              object (slot-value object 'documentation)))
+
+(declaim (inline command))
+(defun command(symbol) (get symbol command-property))
 
 (defclass command-processor()
   ((command-log
@@ -51,7 +54,7 @@
 (defmethod initialize-instance :after
     ((command-processor command-processor) &key initialise-log)
   (when initialise-log
-    (playback-commands initialise-log command-processor)))
+        (playback-commands initialise-log command-processor)))
 
 (defgeneric log-command(command entity args)
   (:documentation "Record the command and args in a command log")
@@ -90,11 +93,11 @@
       (setf (rest (nthcdr (max-undos entity) (undo-stack entity))) nil))))
 
 (defun can-execute-command-p(commandname entity &rest args)
-  (apply (permission-check (get commandname command-property ))
+  (apply (permission-check (command commandname))
          (cons entity args)))
 
 (defun execute-command(commandname command-processor args &key (log t))
-  (let ((command (get commandname command-property ) )
+  (let ((command (command commandname) )
         (allargs (cons command-processor args)))
     (unless (apply (permission-check command) allargs)
       (error 'permission-denied-error
@@ -131,17 +134,17 @@
         (doc (second (assoc :documentation parts)))
         (entity (gensym)))
     (unless action (error "No command action defined for ~A" name))
-    `(eval-when(:compile-toplevel :load-toplevel :execute)
+    `(eval-when(:load-toplevel :execute)
        (setf (get ',name ',command-property)
            (make-instance
             'command
             ,@(when check `(:check (function (lambda(,@args) ,@check))))
             ,@(when undo `(:undo (function (lambda(,@args) ,@undo))))
             :action (function (lambda(,@args) ,@action))
-            :documentation ,doc)
-           (symbol-function ',name)
-           #'(lambda(,entity &rest args)
-               (execute-command ',name ,entity args))))))
+            :documentation ,doc))
+       (defun ,name(,entity &rest args)
+         ,doc
+         (execute-command ',name ,entity args)))))
 
 (defgeneric playback-commands(source command-processor &key log)
   (:documentation "Playback commands on command processor from a
@@ -156,7 +159,9 @@
         (execute-command command command-processor args :log log))))
   (:method((command-log pathname) command-processor &key log)
     (with-open-file(is command-log :direction :input)
-      (playback-commands is command-processor :log log)))
+      (let* ((name (read is))
+             (*package* (find-package name)))
+        (playback-commands is command-processor :log log))))
   (:method((is pathname) (command-processor command-processor) &key log)
     (declare (ignore log))
     (let ((*package*
@@ -194,9 +199,25 @@
   only allowed to be called once on a command-processor object.")
   (:check
    (declare (ignore classname args))
-   (eql (class-of entity) #.(find-class 'command-processor)))
+   (typep entity 'command-processor))
   (:action
    (change-class entity classname)
    (setf *package* (symbol-package classname))
    (apply #'reinitialize-instance (cons entity args))))
+
+(defgeneric save-command-processor-state(object path)
+  (:documentation "If defined saved the state as a configuration
+  command in file at path.")
+  (:method((object command-processor) path)
+    (error "Attempt to write state of ~A to ~A" object path)))
+
+(defclass command-processor-directory(dictionary:directory-dictionary)
+  ()
+  (:default-initargs
+   :default #'(lambda(path) (error "No command processor log at ~A" path))
+   :reader #'(lambda(path)
+               (make-instance 'command-processor
+                              :initialise-log path
+                              :command-log path))
+   :writer #'save-command-processor-state))
 

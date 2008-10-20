@@ -5,6 +5,20 @@
 ;;;;
 ;;;; $Id: defpackage.lisp,v 1.1 2006/07/30 17:42:36 willijar Exp $
 
+(defpackage :clews.views
+  (:use :cl :clews :markup)
+  (:import-from :inet.access-control
+                #:*current-user* #:username #:has-permission)
+  (:import-from :jarw.string #:split-string #:strcat)
+  (:import-from :jarw.mop #:class-precedence-list)
+  (:import-from :dictionary
+                #:get-dictionary #:search-dictionary #:dictionary-keys)
+  (:import-from :jarw.mop #:class-precedence-list)
+  (:import-from :inet.http #:redirect #:query-values #:form-values)
+  (:export #:views #:get-view #:defview #:can-view-p #:handle-view
+           #:module #:modules
+           #:self-describing-component #:id #:title #:description))
+
 (defpackage :jarw.command
   (:use :cl)
   (:import-from :inet.access-control
@@ -14,17 +28,11 @@
   (:export #:command-processor #:defcommand
            #:*log-commands* #:command-log #:log-command
            #:playback-commands #:undo #:redo #:configure
-           #:can-execute-command-p))
+           #:can-execute-command-p
+           #:command-processor-directory #:save-command-processor-state))
 
-(defpackage :clews.views
-  (:use :cl :clews :markup)
-  (:import-from :inet.access-control
-                #:*current-user* #:username #:has-permission)
-  (:import-from :jarw.mop #:class-precedence-list)
-  (:export #:views #:get-view #:defview #:can-view-p #:handle-view))
-
-(defpackage :clews.groups
-  (:documentation "The Group assessment application")
+(defpackage :clews.coursework
+  (:documentation "The coursework management application")
   (:use :cl :clews :dictionary :markup :jarw.command :clews.views)
   (:import-from :inet.access-control
                 #:*current-user* #:username #:assert-permission
@@ -36,10 +44,12 @@
   (:import-from :inet.http
                 #:remote-user #:response #:form-values #:redirect
                 #:query-values #:url)
-  (:import-from :jarw.parse #:parse-input #:format-output)
+  (:import-from :jarw.parse #:parse-input #:format-output #:date)
   (:import-from :jarw.string #:split-string #:strcat)
   (:import-from :inet.access-control
                 #:has-permission #:has-permission #:username)
   (:import-from :jarw.math #:mean #:stddev)
-  (:export #:group-assessment ))
+  (:export #:coursework #:individual-component
+           #:group #:group-coursework  #:group-component
+           #:components-application))
 

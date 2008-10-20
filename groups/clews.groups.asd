@@ -17,5 +17,6 @@
   ((:file "defpackage")
    (:file "command" :depends-on ("defpackage"))
    (:file "view" :depends-on ("defpackage"))
-   (:file "group-assessment" :depends-on ("command" "view"))
-   #+nil(:file "application" :depends-on ("group-assessment"))))
+   (:file "components" :depends-on ("view"))
+   (:file "controller" :depends-on ("command" "view" "components"))
+   (:file "application" :depends-on ("controller"))))

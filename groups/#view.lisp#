@@ -137,14 +137,14 @@ with given navigation menus"))
           :do (cond
                 ((zerop (length part)) (redirect request "STATUS"))
                 ((setf view (get-view part module)))
-                ((throw 'response :not-found)))
+                ((throw 'inet.http:response :not-found)))
           :else
           :do (push (get-dictionary part (modules module))
                     modules)))
       ((rest path)
-       (throw 'response :not-found))
+       (throw 'inet.http:response :not-found))
       ((setf view (get-view (first path) module)))
-      ((throw 'response :not-found)))
+      ((throw 'inet.http:response :not-found)))
     (let ((module (first modules)))
       ;; check we are allowed this view
       (unless (can-view-p view module)
@@ -216,7 +216,8 @@ with given navigation menus"))
                     (let* ((module (get-dictionary modulename (modules module)))
                            (views (views module)))
                       (when views
-                        `((dt ,(title module))
+                        `((dt (em ((a :href ,(strcat modulename "/STATUS"))
+                               ,(title module))))
                           (dd
                            ,(description module)
                            (p ,@(mapcan

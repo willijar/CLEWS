@@ -6,7 +6,7 @@
 
 (in-package :clews.coursework)
 
-(defclass coursework-component(self-describing-component)
+(defclass component(self-describing-component)
   ((deadline :accessor deadline
              :documentation "Deadline date or nil for none")
    (weighting :initform 1 :type number :initarg :weighting :reader weighting
@@ -18,32 +18,33 @@
                    :documentation "If true student file uploads will go here"))
   (:documentation "Class representing courseworks for submitted work"))
 
-(defclass group-coursework-component(coursework-component)
-  ())
-
-(defclass individual-coursework-component(coursework-component)
-  ())
-
-(defun group-coursework-component-p(component)
-  (typep component 'group-coursework-component))
-
-(defmethod initialize-instance :after ((component coursework-component)
+(defmethod initialize-instance :after ((component component)
                                        &key deadline)
-  (setf (slot-value component 'deadline)
-        (jarw.parse:parse-input 'date deadline)))
+  (setf (slot-value component 'deadline) (parse-input 'date deadline)))
 
 (defgeneric component-form(component)
-  (:documentation "Return the form markup fpr a given component")
-  (:method((component coursework-component))
+  (:documentation "Return the form markup for a given component")
+  (:method((component component))
     `((form :method :post)
-      (ol
-       ,@(mapcar
-          #'(lambda(entry)
-              `(p ,(first entry) (br) ,(second entry)))
-          (review-elements component))
-       ((p :align :center)
-        ((:input :type :submit :name ,(id component) :value "Submit")))))))
+      ,(review-elements component)
+      ((p :align :center)
+       ((:input :type :submit :name ,(id component) :value "Submit"))))))
 
+(defgeneric component-mark(controller component data)
+  (:documentation "Given data return the mark for this component")
+  (:method(controller (component component) data)
+    (declare (ignore controller))
+    (form-mark data (component-form component))))
+
+(defgeneric component-completed-p(component data)
+  (:documentation "Return true if componet has been completed")
+  (:method((component component) data) (when data t)))
+
+(defclass group-component(component)
+  ())
+
+(defclass individual-component(component)
+  ())
 
 ;; (defun system-path(pathname)
 ;;   "Return a pathname where the type also contains the verion number - for
