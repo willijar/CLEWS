@@ -445,6 +445,21 @@ p-list with atttributes :mark :raw-mark :no-articles :no-reviews
         (rem-article app (id idx))))
     (warn "~D articles removed" count)))
 
+(defun remove-shortest-articles(app &optional (min-length 1000))
+  "Remove articles (not written by admin or tutor) which have a mark lower than min-mark"
+  (warn "~D Articles" (length (article-index app)))
+  (let ((count 0))
+    (dolist(idx (copy-list (article-index app)))
+      (when (and (not (has-permission
+                       '(:tutor :admin)
+                       app
+                       (get-dictionary (author idx) (users app))))
+                 (content-length idx)
+                 (< (content-length idx) min-length))
+        (incf count)
+        (rem-article app (id idx))))
+    (warn "~D articles removed" count)))
+
 (defun average-mark(marks &key
                     (ignore-nil t)
                     (ignore-0 nil)
