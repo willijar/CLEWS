@@ -492,6 +492,16 @@ of research for the purposes of this assessment."))))
                                 (cadr a))))
     "}"))
 
+(defun bibtex-out(p &optional (stream *standard-output*))
+  (format stream "@~A{ph:~A,~%" (getf p :citetype) (getf p :id))
+  (loop :for a :on p :by #'cddr
+     :unless (member (car a) '(:id :citetype :status :changed :changed-by :journal-abbrev :crossref))
+     :do (when (cadr a) (format stream " ~A=\{~A\},~%" (string-downcase (car a))
+                 (if (eql (car a) :month)
+                     (elt +months+ (1- (cadr a)))
+                     (cadr a)))))
+  (write-string "}" stream))
+
 (defmethod display-publication((p list) style  table)
   (let ((type (getf p :citetype)))
     `(span
