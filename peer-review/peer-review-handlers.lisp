@@ -578,103 +578,112 @@ should correspond to the file format." )
 
 (defmethod marks-handler((app peer-review) request rolest)
   (let* ((allroles (cdr (assoc :student (inet.acl::acl app))))
-         (roles (when (> (length rolest) 0)
-                  (jarw.parse:parse-input 'roles  rolest))))
-    (let* ((authors (sort (if roles
-                              (get-users roles (users app))
-                              (authors app))
-                          #'string<))
-           (fields '(:mark :raw-mark :no-articles :no-reviews :article-mark
-                     :review-mark :feedback-mark-received :last-post))
-           (form `((form :method "post")
-                   (p "Moderate on"
-                    ((mcq :name :moderate-by :style :dropdown
-                          :datatype symbol :value  :subset)
-                     (:mark . "Given Mark")
-                     (:subset . "Subset Student Reviews")
-                     (:all . "All Student Reviews"))
-                    " to average review mark:"
-                    ((input :name :mark :size 5
-                            :datatype (number :format "~4,1f")))
-                    ((input :type "Submit" :value "Recalculate")))))
-           (data (form-data form request)))
-      (flet ((format-value(v)
-               (cond ((not (numberp v)) "-")
-                     ((> v 10000)
-                      (format-time nil  (floor v)))
-                     ((not (integerp v)) (format nil "~4,1f" v))
-                     (t v))))
-        (multiple-value-bind (results moderation)
-            (marks-analysis app authors
-                            (case (getf data :moderate-by)
-                              (:mark (getf data :mark))
-                              (:all (authors app))
-                              (t authors) ))
-          (setf (getf data :mark) moderation)
-          `(html
-            (head (markup:title "Peer Review Marks"))
-            (body
-             (navbar ,(menus app) :on-url "marks/" :relative "../")
-             ,(navbar
-               (list
-                (append '(("." "All"))
-                        (mapcan
-                         #'(lambda(role)
-                             (list (list (string role) (string role))))
-                         allroles )))
-               :on-url (string-upcase rolest))
-             (h1 "Marks for " ,(or roles "All Authors"))
-             (p "To select a subset of students add their role onto
+         (authors
+          (sort
+           (if (equalp rolest "all")
+               (authors app)
+               (mapcan
+                #'(lambda(role)
+                    (if (stringp role)
+                        (list role)
+                        (get-users role (users app))))
+                (if (> (length rolest) 0)
+                    (jarw.parse:parse-input 'roles  rolest)
+                    allroles)))
+           #'string<))
+         (fields '(:mark :raw-mark :no-articles :no-reviews :article-mark
+                   :review-mark :feedback-mark-received :last-post))
+         (form
+          `((form :method "post")
+            (p "Moderate on"
+               ((mcq :name :moderate-by :style :dropdown
+                     :datatype symbol :value  :subset)
+                (:mark . "Given Mark")
+                (:subset . "Subset Student Reviews")
+                (:all . "All Student Reviews"))
+               " to average review mark:"
+               ((input :name :mark :size 5
+                                   :datatype (number :format "~4,1f")))
+               ((input :type "Submit" :value "Recalculate")))))
+         (data (form-data form request)))
+    (flet ((format-value(v)
+             (cond ((not (numberp v)) "-")
+                   ((> v 10000)
+                    (format-time nil  (floor v)))
+                   ((not (integerp v)) (format nil "~4,1f" v))
+                   (t v))))
+      (multiple-value-bind (results moderation)
+          (marks-analysis app authors
+                          (case (getf data :moderate-by)
+                            (:mark (getf data :mark))
+                            (:all (authors app))
+                            (t authors) ))
+        (setf (getf data :mark) moderation)
+        `(html
+          (head (markup:title "Peer Review Marks"))
+          (body
+           (navbar ,(menus app) :on-url "marks/" :relative "../")
+           ,(navbar
+             (list
+              (append '(("all" "All"))
+                      (mapcar
+                       #'(lambda(role)
+                           (if (stringp role)
+                               (list (format nil "../author/~A" role) role)
+                               (list (string role) (string role))))
+                       allroles )))
+             :on-url (string-upcase rolest))
+           (h1 "Marks for " ,(or rolest "Current Students"))
+           (p "To select a subset of students add their role onto
 the url e.g. .../marks/it2002.")
-             ,(markup-form form data)
-             ((table :border 1)
-              (tr (th "Student") (th "Mark") (th "Raw Mark")
-                  (th "No" (br) "Articles")
-                  (th "No" (br) "Reviews")
-                  (th "Average"(br)"Article" (br) "Mark" (br) "Received")
-                  (th "Average" (br) "Review" (br) "Mark" (br) "Given")
-                  (th "Average" (br) "Review" (br) "Feedback" (br) "Mark")
-                  (th "Last Article on"))
-              ,@(mapcar
-                 #'(lambda(username)
-                     (let ((result (gethash username results)))
-                       `(tr (td ((a :href ,(concatenate
-                                            'string "../author/" username))
-                                 ,username))
+           ,(markup-form form data)
+          ((table :border 1)
+           (tr (th "Student") (th "Mark") (th "Raw Mark")
+               (th "No" (br) "Articles")
+               (th "No" (br) "Reviews")
+               (th "Average"(br)"Article" (br) "Mark" (br) "Received")
+               (th "Average" (br) "Review" (br) "Mark" (br) "Given")
+               (th "Average" (br) "Review" (br) "Feedback" (br) "Mark")
+               (th "Last Article on"))
+           ,@(mapcar
+              #'(lambda(username)
+                  (let ((result (gethash username results)))
+                    `(tr (td ((a :href ,(concatenate
+                                         'string "../author/" username))
+                              ,username))
                          ,@(mapcar
                             #'(lambda(key)
                                 `((td :align "right")
                                   ,(format-value (getf result key))))
                             fields))))
-                 authors)
-              ,@(let ((aggregate
-                       (mapcan #'(lambda(field)
-                                   (list field
-                                         (mapcan
-                                          #'(lambda(author)
-                                              (let ((v (getf (gethash
-                                                              author results)
-                                                             field)))
-                                                (when v (list v))))
-                                          authors)))
-                               fields)))
-                     `(((tr :border 2) (th "Averages")
-                        ,@(mapcar #'(lambda(field)
-                                      `((th :align "right")
-                                        ,(format-value
-                                          (mean
-
-                                           (mapcan
-                                            #'(lambda(m) (when (and m (> m 0))
-                                                           (list m)))
-                                            (getf aggregate field))))))
-                                  fields))
-                       ((tr :border 2) (th "Std Deviations")
-                        ,@(mapcar #'(lambda(field)
-                                      `((th :align "right")
-                                        ,(format-value
-                                          (stddev (getf aggregate field)))))
-                                  fields)))) )))) ))))
+              authors)
+           ,@(let ((aggregate
+                    (mapcan #'(lambda(field)
+                                (list field
+                                      (mapcan
+                                       #'(lambda(author)
+                                           (let ((v (getf (gethash
+                                                           author results)
+                                                          field)))
+                                             (when v (list v))))
+                                       authors)))
+                            fields)))
+                  `(((tr :border 2) (th "Averages")
+                     ,@(mapcar #'(lambda(field)
+                                   `((th :align "right")
+                                     ,(format-value
+                                       (mean
+                                        (mapcan
+                                         #'(lambda(m) (when (and m (> m 0))
+                                                        (list m)))
+                                         (getf aggregate field))))))
+                               fields))
+                    ((tr :border 2) (th "Std Deviations")
+                     ,@(mapcar #'(lambda(field)
+                                   `((th :align "right")
+                                     ,(format-value
+                                       (stddev (getf aggregate field)))))
+                              fields)))) )))) )))
 
 
 (defmethod dregs-handler((app peer-review) request rest)
@@ -689,8 +698,8 @@ the url e.g. .../marks/it2002.")
            `(p ,@(mapcar
                   (lambda(idx)
                     `(span ((a :href ,(id idx)) ,(title idx))
-                      (em " " ,(author idx))
-                      " (" ,(format nil "~,1F" (mark idx))")" (br)))
+                           (em " " ,(author idx))
+                           " (" ,(format nil "~,1F" (mark idx))")" (br)))
                   entry)))
          (articles-with-duplicate-titles app)))
      ((section :title "Worst Articles")
@@ -698,8 +707,8 @@ the url e.g. .../marks/it2002.")
        ,@(mapcar
           #'(lambda(idx)
               `(li ((a :href ,(id idx)) ,(title idx))
-                " (" ,(format nil "~,1f" (mark idx)) ")"
-                ,(author idx) ))
+                   " (" ,(format nil "~,1f" (mark idx)) ")"
+                   ,(author idx) ))
           (subseq (best-articles (article-index app) :reverse t) 0 50))))
      ((section :title "Short Articles")
       (ol
