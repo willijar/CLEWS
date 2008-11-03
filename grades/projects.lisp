@@ -302,15 +302,19 @@ listing"
 
 (defmethod tutor-home-handler((app projects-manager) request rest)
   (let* ((username (username *current-user*))
-         (projects  (mapcan
-                    #'(lambda(p) (when (and (active (student p))
-                                 (some
-                                  #'(lambda(m)
-                                      (and (string= username (modified-by m))
-                                           (not (mark m))))
-                                  (marks p)))
-                        (list p)))
-                    (allocated-projects (db app)))))
+         (projects
+          (mapcan
+           #'(lambda(p)
+               (when (and (student p)
+                          (active (student p))
+                          (some
+                           #'(lambda(m)
+                               (and (string= username (modified-by m))
+                                    (not (mark m))
+                                    (not (feedback m))))
+                           (marks p)))
+                 (list p)))
+           (allocated-projects (db app)))))
     (unless projects (return-from tutor-home-handler))
     `((section :title "Projects to Assess")
       (p "List of projects for which there are open assessments that require completion by you.")
@@ -321,8 +325,7 @@ listing"
             `((table
                (tr ((th :colspan 3) "Assessment") (th "Mark")
                    (th "Assessor") (th "Deadline"))
-
- ,@(assessor-form-rows app p :relative "../"))))))))
+               ,@(assessor-form-rows app p :relative "../"))))))))
 
 (defmethod supervisor-home-handler((app projects-manager) request rest)
   (unless (has-permission :supervisor app)
@@ -448,10 +451,9 @@ listing"
     (nil . "None")
     ,@(user-choices app (assessor-role project mark))))
 
-(defun assessor-form-rows(app project
-                          &key
-                          (relative "../../")
-                          (marks (current-marks project)))
+(defun assessor-form-rows
+    (app project &key (relative "../../")
+     (marks (mapcar #'update-instance-from-records (current-marks project))))
   (mapcar
    #'(lambda(m)
        `(tr
@@ -471,7 +473,8 @@ listing"
           ((td :align :right)
            ,(format-percentage (mark m)))
           (td ,(assessor-choice-field app project m))
-          (td ,(jarw.parse::format-output 'jarw.parse::date (deadline-date m))) )))
+          (td ,(jarw.parse::format-output
+                'jarw.parse::date (deadline-date m))) )))
    marks))
 
 (defun assessors-update(app data marks)
