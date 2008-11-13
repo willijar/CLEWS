@@ -567,6 +567,12 @@ For minor works 10% per day late"
    :weight #'(lambda(m) (weighting (assessment m)))
    :mark #'(lambda(m) (+ (or (mark m) 0) (late-penalty m)))))
 
+(defmethod calculated-mark((mark mark))
+  (let ((form (feedback-form (assessment mark))))
+    (if form
+        (form-mark (feedback mark) form)
+        (mark mark))))
+
 (def-view-class examboard()
   ((examboardid :accessor examboardid :type integer :db-kind :key
                 :initarg :examboardid)
