@@ -20,4 +20,5 @@
      (:file "database" :depends-on ("utility"))
      (:file "grades" :depends-on ("database"))
      (:file "projects" :depends-on ("database"))
-     (:file "specifications" :depends-on ("database"))))
+     (:file "specifications" :depends-on ("database"))
+     (:file "reports" :depends-on ("specifications"))))

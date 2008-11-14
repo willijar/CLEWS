@@ -569,8 +569,8 @@ For minor works 10% per day late"
 
 (defmethod calculated-mark((mark mark))
   (let ((form (feedback-form (assessment mark))))
-    (if form
-        (form-mark (feedback mark) form)
+    (if (and form (> (length (feedback mark)) 3))
+        (* 100.0 (form-mark (feedback mark) form))
         (mark mark))))
 
 (def-view-class examboard()
