@@ -20,8 +20,7 @@
 (in-package :clews)
 
 (defconstant +version+
-  (if (boundp '+version+) +version+
-      "CLEWS/0.2")
+  (if (boundp '+version+) +version+ "CLEWS/0.2")
   "Product token")
 
 (defclass application (component)
@@ -110,15 +109,15 @@ the app is being published"))
   `(("." ,#'response-handler :stage :response :match :prefix
      :display-plugins-p t)
     ,@(when-bind(handler (make-authentication-handler app baseurl))
-                `(("." ,handler :stage :authentication :match :prefix)))
+       `(("." ,handler :stage :authentication :match :prefix)))
     ,@(when (find-method #'log-handler nil (list (class-of app) t t) nil)
-            `(("." ,#'log-handler :stage :log :match :prefix)))
+       `(("." ,#'log-handler :stage :log :match :prefix)))
     ,@(when (users app)
-            `(("." ,#'authorization-handler :stage :authorization :match :prefix)
-              ("su" ,#'su-handler :stage :response :match :exact :role :admin)
-              ("preferences/" ,#'preference-handler
-               :stage :response :match :prefix
-               :display-plugins-p nil)))))
+       `(("." ,#'authorization-handler :stage :authorization :match :prefix)
+         ("su" ,#'su-handler :stage :response :match :exact :role :admin)
+         ("preferences/" ,#'preference-handler
+                         :stage :response :match :prefix
+                         :display-plugins-p nil)))))
 
 (defmethod response-handler(app request rest)
   (declare (ignore app rest))
@@ -292,16 +291,14 @@ will be modified to include the plugins"
                (when (and cpwd
                           (string= digest
                                    (authentication-digest cpwd request)))
-
                  (setf (remote-user request) uid))))
       ;; present and analyse login form
       (login-handler app request rest params))))
 
-(defmethod authorization-handler((app application) request rest )
+(defmethod authorization-handler((app application) request rest)
   "Default authorisation handler checks user dictionary if it exists.
 It sets the remote-user field to the user record if found, otherwise
 returns a Forbidden error"
-  (declare (ignore rest))
   (let ((uid (remote-user request)))
     (when (users app)
       (let ((user (when uid (get-dictionary uid (users app)))))
@@ -312,17 +309,16 @@ returns a Forbidden error"
               (setf user (get-dictionary proxy (users app))))))
         (setf (remote-user request) user)
         (unless (has-permission :view app user)
-          (cons :forbidden "
-You are forbidden to access this web application.
+          (cons :forbidden "You are forbidden to access this web application.
 Please contact the system administrator if you believe you should
 have access."))))))
 
 (defmethod su-handler((app application) request rest)
   (let ((user (remote-user request)))
     (unless (has-permission :admin app  user)
-      (return-from su-handler (cons
-                               403 "
-You do not have admin authorisation for this web application.
+      (return-from su-handler
+        (cons
+         403 "You do not have admin authorisation for this web application.
 Please contact the system administrator if you believe you should
 have access.")))
     (let ((proxy (car (form-values "su" request))))
@@ -360,32 +356,31 @@ have access.")))
   (let ((username (car (form-values "USERNAME" request)))
         (persistence (car (form-values "PERSISTENCE" request)))
         (password (car (form-values "PASSWORD" request))))
-    (or
-     (and
-      username
-      (credentials-valid-p password username (passwords app))
-      (let ((response (make-instance
-                       'response
-                       :status :see-other
-                       :content
-                       (inet.http:simple-message-html
-                        "Redirect"
-                        (format nil "Resource has moved to ~S." (url request))))))
-        (setf (header-field :location response) (url request))
-        (setf (cookie "authentication" response
-                      :domain (getf params :domain)
-                      :path (path (getf params :baseurl))
-                      :max-age
-                      (when persistence
-                        (parse-integer persistence :junk-allowed t)))
-              (concatenate
-               'string
-               username ":" (authentication-digest
-                             (stored-credentials username (passwords app))
-                             request)))
-        response))
-     ;;failed in authentication - present form
-     `(html
+    (cond
+      ((and username (credentials-valid-p password username (passwords app)))
+       (let ((response
+              (make-instance
+               'response
+               :status :see-other
+               :content
+               (inet.http:simple-message-html
+                "Redirect"
+                (format nil "Resource has moved to ~S." (url request))))))
+         (setf (header-field :location response) (url request))
+         (setf (cookie "authentication" response
+                       :domain (getf params :domain)
+                       :path (path (getf params :baseurl))
+                       :max-age
+                       (when persistence
+                         (parse-integer persistence :junk-allowed t)))
+               (concatenate
+                'string
+                username ":" (authentication-digest
+                              (stored-credentials username (passwords app))
+                              request)))
+         response))
+      (;;failed in authentication - present form
+        `(html
        (head (title "Web Login"))
        (body
         ((section :title "Web Login"))
@@ -395,10 +390,9 @@ have access.")))
                (p "Please enter your credentials to access this web below.")
                ,@(when username
                        `(((p :class "error")
-                          "Login failed - the username and password do not match our
- records.")))))
+                          "Login failed - the username and password do not match our records.")))))
           (tr (th "Username")
-              (td ((input :name :username))))
+              (td ((input :name :username ,@(when username `(:value ,username))))))
           (tr (th "Password")
               (td ((input :type "password" :name :password))))
           (tr ((td :align "center" :colspan 2) "For how long do you
@@ -414,7 +408,7 @@ browser"))
                      (31536000 . "1 Year") )))
           (tr (td)
               ((td :colspan 2)
-               ((input :type "submit" :value "Submit Credentials")))))))))))
+               ((input :type "submit" :value "Submit Credentials"))))))))))))
 
 (defmethod preference-handler ((app application) request rest)
   (let* ((user (remote-user request))
