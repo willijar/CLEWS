@@ -1,16 +1,15 @@
-;;;; CLEWS Form handling
-;;;; Copyright (C) 2002-2005 John A.R. Williams <J.A.R.Williams@jarw.org.uk>
+;;;; CLEWS Form Analysis handling
+;;;; Copyright (C) 2002-2008 John A.R. Williams <J.A.R.Williams@jarw.org.uk>
 ;;;; Released under the GNU General Public License (GPL)
 ;;;; See <http://www.gnu.org/copyleft/gpl.html> for license details
 ;;;;
-;;;; $Id: analysis.lisp,v 1.2 2007/07/16 07:28:07 willijar Exp $
 
 (in-package :clews.form)
 
 (defun mark-form-data(data)
   (form-mark data (find-form data)))
 
-(defgeneric form-mark(data from)
+(defgeneric form-mark(data form)
   (:documentation "Calculate a mark from data - by default calculates it
    on the basis of all elements which are number types and have a maximum
    value set.")
@@ -24,6 +23,45 @@
             (incf sum (* w v)))))
       (when (> total 0)
         (/ sum total)))))
+
+(defun form-mark-evaluator(expr)
+  "Given a form mark evaluation expression return a lambda for evaluation
+The following values are lexically bound fopr expr
+fields - list of form field names
+weighting - function which returns the weighting"
+  `(lambda(data form)
+     (let* ((elements (elements form))
+            (fields (mapcar #'name elements)))
+       (labels ((element(name) (find name elements :test #'equal :key #'name))
+                (value(fields)
+                  (if (consp fields)
+                      (mapcar #'value fields)
+                      (or (element-mark (element fields) (getf data fields)) 0)))
+                (weighting(fields)
+                  (if (consp fields)
+                      (mapcar #'weighting fields)
+                      (element-weighting (element fields))))
+                (weighted-sum(fields)
+                  (let ((sum 0) (total 0))
+                    (dolist(field fields)
+                      (let ((v (value field))
+                            (w (weighting field)))
+                        (format t "~S ~A ~A ~%" field v w)
+                        (when (and (numberp v) (numberp w))
+                          (incf total w)
+                          (incf sum (* w v)))))
+                    (when (> total 0) (/ sum total)))))
+         ,expr))))
+
+#| e.g. standard form mark using form-mark-evaluator
+(form-mark-evaluator '(clews.form::weighted-sum clews.form::fields))
+|#
+
+(defmethod form-mark(data (form list))
+  (let ((expr (getf (form-attrs form) :form-mark)))
+    (if expr
+        (funcall (eval (form-mark-evaluator expr)) data form)
+        (call-next-method))))
 
 (defgeneric form-analysis-markup(form data)
   (:documentation "Produce markup of analysis of given item for given data"))
