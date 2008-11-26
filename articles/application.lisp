@@ -106,7 +106,7 @@ article return article menus on second row")
 
 (defmethod response-handler((app clews-articles) request (action action))
   "Response for collection actions"
-    (response-handler (collection app) request action))
+  (response-handler (collection app) request action))
 
 (defun get-style(collection)
   (let ((style  (user-preference :style collection *current-user* nil)))

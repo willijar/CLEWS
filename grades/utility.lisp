@@ -223,7 +223,7 @@ object"
   (let ((*print-circle* t)
         (*print-array* t)
         (*print-pretty* nil)
-        (*package* #.(find-package :keyword)))
+        (*package* #.(find-package :cl)))
     (let ((escaped (prin1-to-string val)))
       (clsql-sys::substitute-char-string escaped #\Null " "))))
 
@@ -231,6 +231,7 @@ object"
    (declare (ignore type database db-type))
    (let ((*package* #.(find-package :cl)))
      (read-from-string val)))
+
 
 #|
 (dolist(a (clews.grades::assessment-records clews.grades::*db*))
