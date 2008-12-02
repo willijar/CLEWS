@@ -218,7 +218,7 @@ object"
 	 (month (nth 4 decoded-time)))
   (if (< month 10) (1- year) year)))
 
-(defmethod database-output-sql-as-type ((type (eql 'list)) val database db-type)
+(defmethod clsql-sys::database-output-sql-as-type ((type (eql 'list)) val database db-type)
   (declare (ignore database db-type))
   (let ((*print-circle* t)
         (*print-array* t)
