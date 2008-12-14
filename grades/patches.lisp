@@ -16,7 +16,7 @@
     (declare (type (simple-array (unsigned-byte 8) (*)) bytes))
     (read-sequence bytes stream)
     (if allow-wide
-        (sb-ext:octets-to-string bytes :external-format :latin1)
+        (sb-ext:octets-to-string bytes :external-format :utf8)
         (map 'string #'code-char bytes))))
 
 (defun postgresql-socket::read-socket-value-string (socket)
@@ -34,7 +34,7 @@
     (loop for code = (read-byte socket)
           until (zerop code)
           do (vector-push-extend code bytes))
-    (sb-ext:octets-to-string bytes :external-format :latin1)))
+    (sb-ext:octets-to-string bytes :external-format :utf8)))
 
 (defun send-socket-value-string (socket value)
   (declare (type stream socket)
@@ -45,6 +45,6 @@
         do (write-byte code socket)
         finally (write-byte 0 socket))
   #+sb-unicode
-  (write-sequence (sb-ext:string-to-octets value  :external-format :latin1
+  (write-sequence (sb-ext:string-to-octets value  :external-format :utf8
                                            :null-terminate t) socket)
   nil)
