@@ -650,7 +650,8 @@ For minor works 10% per day late"
 (defgeneric moduleids(project)
   (:documentation "Return the moduleids associated with this project")
   (:method((project project))
-     (split-string (slot-value project 'moduleids))))
+    (let ((s (slot-value project 'moduleids)))
+      (when s (split-string s)))))
 
 (defgeneric (setf moduleids)(values project)
   (:documentation "Set the moduleids associated with this project")
@@ -661,7 +662,7 @@ For minor works 10% per day late"
   (:documentation "Return the module marks associated with a project"))
 
 (defmethod module-marks((p project))
-  (when (and (student p) (moduleids p))
+  (when (and (student p) (moduleids p)q)
     (if (slot-boundp p 'module-marks)
         (slot-value p 'module-marks)
         (setf (slot-value p 'module-marks)
@@ -1069,7 +1070,7 @@ for given module and year"
                (moduleid module-mark)))
       (values mark module-mark))))
 
-(defun refer(db studentid itemid)
+(defun refer(db studentid itemid &key deadline)
   "Given a student username or id and a module or assessmentid update
 the mark and module-mark records to a referred status. Signals an
 error if state is incorrect"
@@ -1080,9 +1081,9 @@ error if state is incorrect"
                               :moduleid (moduleid module-mark)
                               :studentid (studentid module-mark)
                               :mark nil
+                              :year (year module-mark)
                               :attempt 2
-                              :revision 1
-                              :modified (get-universal-time))))
+                              :revision 1)))
         (update-records-from-instance m)
         (print m)))
     (when (and mark (< (attempt mark) 2))
@@ -1091,8 +1092,10 @@ error if state is incorrect"
                               :studentid (studentid mark)
                               :attempt 2
                               :mark nil
-                              :revision 1
-                              :modified (get-universal-time))))
+                              :revision 1)))
+        (when deadline
+          (setf (deadline-date m)
+                (jarw.parse:parse-input 'jarw.parse:date deadline)))
         (update-records-from-instance m)
         (print m)))
     (terpri)))
