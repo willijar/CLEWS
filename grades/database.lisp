@@ -662,7 +662,7 @@ For minor works 10% per day late"
   (:documentation "Return the module marks associated with a project"))
 
 (defmethod module-marks((p project))
-  (when (and (student p) (moduleids p)q)
+  (when (and (student p) (moduleids p))
     (if (slot-boundp p 'module-marks)
         (slot-value p 'module-marks)
         (setf (slot-value p 'module-marks)
