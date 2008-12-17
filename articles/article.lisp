@@ -372,7 +372,8 @@ article"))
   (let* ((collection (collection article))
          (config-file (merge-pathnames "cl-docutils.conf"
                                        (root-path collection)))
-         (config-modified (file-write-date config-file))
+         (config-modified (when (probe-file config-file)
+                            (file-write-date config-file)))
          (now (get-universal-time)))
   (make-instance
    'docutils.nodes:document
