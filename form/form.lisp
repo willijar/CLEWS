@@ -356,7 +356,7 @@ on-failure - message designator called if data submission no successful."
               (unless condition
                 (handler-case
                     (setf data (funcall handler data))
-                  ((error(c) (setf condition c)))))
+                  (error(c) (setf condition c))))
               (let ((msg (if condition on-failure on-success)))
                 (if (functionp msg)
                     (funcall msg data)
