@@ -336,7 +336,11 @@ attributes upon creation of the question"))
 (defmethod  question-mark((question numeric-q))
   (let* ((a  (submitted-value (user-record question)))
          (c  (slot-value question 'answer)))
-    (if (and a (< (abs (/ (- a c) c)) (slot-value question 'tol))) 1 0 )))
+    (if (and a
+             (or (= a c)
+                 (and (/= 0 c)
+                      (< (abs (/ (- a c) c)) (slot-value question 'tol)))))
+        1 0 )))
 
 (defmethod feedback ((question numeric-q))
   `((p ,(format nil "The correct answer is ~@? "
