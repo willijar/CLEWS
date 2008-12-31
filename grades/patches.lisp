@@ -2,24 +2,9 @@
 ;;; character encoding
 
 (in-package #:postgresql-socket)
+% (untrace postgresql-socket::read-socket-value-string postgresql-socket::read-socket-sequence)
 
-(defun read-socket-sequence (stream length &optional (allow-wide t))
-  (declare (stream stream)
-	   (optimize (speed 3) (safety 0)))
-  #-sb-unicode
-  (let ((result (make-string length)))
-    (dotimes (i length result)
-      (declare (fixnum i))
-      (setf (char result i) (code-char (read-byte stream)))))
-  #+sb-unicode
-  (let ((bytes (make-array length :element-type '(unsigned-byte 8))))
-    (declare (type (simple-array (unsigned-byte 8) (*)) bytes))
-    (read-sequence bytes stream)
-    (if allow-wide
-        (sb-ext:octets-to-string bytes :external-format :utf8)
-        (map 'string #'code-char bytes))))
-
-(defun postgresql-socket::read-socket-value-string (socket)
+(defun read-socket-value-string (socket)
   (declare (type stream socket))
   #-sb-unicode
   (with-output-to-string (out)
