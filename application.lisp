@@ -383,32 +383,34 @@ have access.")))
         `(html
        (head (title "Web Login"))
        (body
-        ((section :title "Web Login"))
-        ((form :method "POST")
-         ((table :width "80%")
-          (tr ((td :colspan 2)
-               (p "Please enter your credentials to access this web below.")
-               ,@(when username
-                       `(((p :class "error")
-                          "Login failed - the username and password do not match our records.")))))
-          (tr (th "Username")
-              (td ((input :name :username ,@(when username `(:value ,username))))))
-          (tr (th "Password")
-              (td ((input :type "password" :name :password))))
-          (tr ((td :align "center" :colspan 2) "For how long do you
+        ((section :title "Web Login")
+         ((form :method "POST")
+          ((table :width "80%")
+           (tr ((td :colspan 2)
+                (p "Please enter your credentials to access this web below.")
+                ,@(when username
+                        `(((p :class "error")
+                           "Login failed - the username and password do not match our records.")))))
+           (tr (th "Username")
+               (td ((input :name :username ,@(when username `(:value ,username))))))
+           (tr (th "Password")
+               (td ((input :type "password" :name :password))))
+           (tr ((td :align "center" :colspan 2) "For how long do you
 wish the browser to remember your creditentials?" (br) "It is
 recommended that you choose \"This Session Only\" if accessing through
 a public or shared computer system. Cookies must be enabled in you web
 browser"))
-          (tr (td) (td
-                    ((mcq :style :dropdown :name :persistence)
-                     (nil . "This session only")
-                     (302400 . "1 Week")
-                     (1209600 . "1 Month")
-                     (31536000 . "1 Year") )))
-          (tr (td)
-              ((td :colspan 2)
-               ((input :type "submit" :value "Submit Credentials"))))))))))))
+           (tr (td) (td
+                     ((mcq :style :dropdown :name :persistence)
+                      (nil . "This session only")
+                      (302400 . "1 Week")
+                      (1209600 . "1 Month")
+                      (31536000 . "1 Year") )))
+           (tr (td)
+               ((td :colspan 2)
+                ((input :type "submit" :value "Submit Credentials"))))))
+         ((p :class :error) (em "Firefox is the recommended broswer for using this web application. It is designed to web standards and not tested against bugs in other web browsers.")
+))))))))
 
 (defmethod preference-handler ((app application) request rest)
   (let* ((user (remote-user request))
