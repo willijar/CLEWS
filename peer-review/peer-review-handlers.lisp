@@ -182,7 +182,7 @@ peer review system and to how it is assessed.")
   (let* ((idx (article-index app))
          (user (remote-user request))
          (username (username user)))
-    (flet ((make-links(idx &key (count 12) extra prefix suffix)
+    (flet ((make-links(idx &key (count (min 12 (1- (length idx)))) extra prefix suffix)
              (mapcan
               #'(lambda(entry)
                   (nconc
