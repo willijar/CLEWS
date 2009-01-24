@@ -96,7 +96,7 @@ from the app"
        (assessment-attempt-handler app request assessment student))
       ((equal action "feedback")
        (if student
-           (assessment-feedback-handler app request assessment)
+           (assessment-feedback-handler app request assessment student)
            (mark-handler app request assessment student)))
       ((equal action "marks")
        (marks-summary-handler app request assessment))
