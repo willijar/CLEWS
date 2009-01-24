@@ -289,13 +289,13 @@ regardless. Non-completions are always nil"))
 normalisation set (even if their mark would't be calculated)"
   (let ((knowledge-set (mapcan #'(lambda(k) (when (completed k) (list k)))
                                normalisation-knowledge-set)))
-
     (if knowledge-set
         (*
          (- 1 (mean (mapcar #'(lambda(m) (or m 0))
                             (assessment-normalised-marks
                              knowledge-set assessment
-                             knowledge-set :counted-only nil))))
+                             :normalisation-set knowledge-set
+                             :counted-only nil))))
          (/ (mean (mapcar #'timetaken knowledge-set)) 60))
         1)))
 
