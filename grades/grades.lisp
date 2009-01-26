@@ -989,7 +989,7 @@ module"
         ,(module-summary app module)
         (hr)
         ((table :border 1 :cellpadding 0 :cellspacing 0)
-         (tr ((th :colspan 2) "Student")
+         (tr ((th :colspan 3) "Student")
              ,@(mapcar
                 #'(lambda(a)
                     `((th)
@@ -1005,6 +1005,9 @@ module"
                        (gethash (studentid student) module-marks)))
                   `(tr
                     (td ,(studentid student))
+                    (td ,@(when (has-permission :admin app)
+                                (list (candidate student))))
+
                     (td ,(fullname student))
                     ,@(mapcar
                        #'(lambda(h)
