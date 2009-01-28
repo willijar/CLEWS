@@ -18,17 +18,29 @@
 
 (in-package :clews.grades)
 
-(let ((connected (make-hash-table :test #'equal)))
-  (defun db-connect(db)
+;; (let ((connected (make-hash-table :test #'equal)))
+;;   (defun db-connect(db)
+;;     "open a local db connection"
+;;     (let* ((args (or (gethash db connected) (cl-user::db db)))
+;; 	   (con (clsql:connect
+;; 		 args
+;; 		 :database-type :postgresql-socket :if-exists :new)))
+;;       (when con (setf (gethash db connected) args))
+;;       con)))
+
+(defun db-connect(db)
     "open a local db connection"
-    (let* ((args (or (gethash db connected) (cl-user::db db)))
-	   (con (clsql:connect
-		 args
-		 :database-type :postgresql-socket :if-exists :old)))
-      (when con (setf (gethash db connected) args))
-      con)))
+    (clsql:connect
+ 		 (cl-user::db db)
+ 		 :database-type :postgresql-socket :if-exists :new))
 
 (defvar *db* (db-connect "MSc") "The database")
+
+(defun reset-db()
+  (setq *db* (db-connect "MSc"))
+  (setf (slot-value aston::*grades* 'db) *db*)
+  (setf (slot-value aston::*msc-projects* 'db) *db*)
+)
 
 (defun format-percentage(num &optional (places 0) (%-p t))
   "Return a percentage value formatted for user output (default 0 places)"
