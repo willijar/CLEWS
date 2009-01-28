@@ -756,7 +756,9 @@ given for the project"
       (setf (slot-value module-mark 'marks)
             (mapcan
              #'(lambda(m)
-                 (when (equal (moduleid (assessment m)) (moduleid module-mark))
+                 (when (and (equal (moduleid (assessment m))
+                                   (moduleid module-mark))
+                            (= (year module-mark) (year (assessment m))))
                    (list m)))
              (marks  (student module-mark))))))
 
@@ -960,7 +962,7 @@ sorted by mark-priority>")
 
 (defgeneric module-mark-groups(entity)
   (:documentation
-   "Given of marks grouped by student and assessment, with each group
+   "Given of marks grouped by student and module, with each group
 sorted by mark-priority>")
   (:method((marks list))
     (mapcar
