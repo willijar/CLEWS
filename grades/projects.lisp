@@ -456,6 +456,7 @@ listing"
      (marks (mapcar #'update-instance-from-records (current-marks project))))
   (mapcar
    #'(lambda(m)
+       (when m
        `(tr
          (td
           ,(if (or (can-edit app m)
@@ -474,7 +475,7 @@ listing"
            ,(format-percentage (mark m)))
           (td ,(assessor-choice-field app project m))
           (td ,(jarw.parse::format-output
-                'jarw.parse::date (deadline-date m))) )))
+                'jarw.parse::date (deadline-date m))) ))))
    marks))
 
 (defun assessors-update(app data marks)
