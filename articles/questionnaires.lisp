@@ -191,15 +191,15 @@ construct the question"))
         (mark (question-mark question)))
     `(((div :class "feedback")
        ,text
-       (p "Your answer: "
+       "Your answer: "
         ,@(element-markup (markup question)
                           (submitted-value
                            (user-record question))
                           t)
-        ,(suffix question))
-      (p (b ,(if (= mark 0) "Wrong: " (if (= mark 1) "Correct: ")))
-       " Mark " ,mark)
-       ,@feedback))))
+       ,(suffix question))
+      (b ,(if (= mark 0) "Wrong: " (if (= mark 1) "Correct: ")))
+       " Mark " ,mark
+      ,@feedback)))
 
 (defun make-value-compound(argname field)
   ;; note the field is modified by this method
@@ -237,10 +237,10 @@ construct the question"))
   ())
 
 (defmethod feedback ((question numeric-q))
-  `((p ,(format nil "The correct answer is ~@? "
+  `(,(format nil "The correct answer is ~@? "
                 (slot-value question 'clews.assessment::fmt)
                 (slot-value question 'clews.assessment::answer))
-     ,(clews.assessment::suffix question))
+     ,(suffix question)
     ,(slot-value question 'clews.assessment::feedback)))
 
 (defclass multiple-choice-q(rst-question clews.assessment:multiple-choice-q)
