@@ -14,15 +14,18 @@
    on the basis of all elements which are number types and have a maximum
    value set.")
   (:method (data form)
-    (let ((sum 0) (total 0))
+    (let ((sum 0) (total 0) (mult 1.0))
       (dolist(element (elements form))
         (let ((v (or (element-mark element (getf data (name element))) 0))
               (w (element-weighting element)))
-          (when (and w v)
-            (incf total w)
-            (incf sum (* w v)))))
+          (cond
+            ((and (numberp w) (numberp v))
+             (incf total w)
+             (incf sum (* w v)))
+            ((and (numberp v) (eql w '*))
+             (setf mult (* mult v))))))
       (when (> total 0)
-        (/ sum total)))))
+        (* mult (/ sum total))))))
 
 (defun form-mark-evaluator(expr)
   "Given a form mark evaluation expression return a lambda for evaluation
