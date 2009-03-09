@@ -320,11 +320,13 @@ attributes upon creation of the question"))
 
 (defclass numeric-q(simple-question)
   ((answer :initarg :answer)
-   (tol :initarg :tol :type number :initform 0.01)
+   (tol :initarg :tol :type real :initform 0.01)
    (fmt :initarg :format :type string :initform "~,3G"))
-  (:default-initargs :type 'number :default 0)
+  (:default-initargs :type '(number :format "@,3G") :default 0)
   (:documentation "A numeric question"))
 
+(defmethod datatype((q numeric-q))
+  `(number :format ,(slot-value q 'fmt)))
 
 (defmethod markup((question numeric-q))
   `((input
