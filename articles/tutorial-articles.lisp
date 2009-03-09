@@ -1,4 +1,4 @@
-M;; $Id: tutorial-articles.lisp,v 1.1 2007/07/26 08:55:10 willijar Exp willijar $
+;; $Id: tutorial-articles.lisp,v 1.1 2007/07/26 08:55:10 willijar Exp willijar $
 ;; Tutorial Articles
 ;; Copyright (C) 2006 Dr. John A.R. Williams
 
