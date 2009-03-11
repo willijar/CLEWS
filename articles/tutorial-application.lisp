@@ -316,7 +316,8 @@ clockTick();
         `(((markup:section :title "By Assessment")
          ,@(mapcar
             #'(lambda(assessment)
-                `((markup:section :title ,(docutils.assessment::name assessment))
+                `((markup:section
+                   :title ,(docutils.assessment::name assessment))
                   ,(users-report
                     (list
                      (list "Time Taken" 'jarw.parse:time-period
@@ -343,7 +344,14 @@ clockTick();
                           knowledge assessment)
                          (clews.assessment::assessment-count-p-reason
                           knowledge assessment))))
-                    sort)))
+                    sort)
+                  ,(clews.assessment:assessment-detail-statistics
+                    (mapcar
+                     #'(lambda(user)
+                         (state-value (docutils.assessment::name assessment)
+                                      (user-state article user)))
+                     users)
+                    assessment)))
             (assessments article)))))
         (markup::hr)
         ,@(when (children article)
