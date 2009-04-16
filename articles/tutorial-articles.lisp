@@ -219,7 +219,7 @@ be considered completed")
         (slot-value article 'completion-threshold)
         0.8)))
 
-(defmethod read-document :around ((article tutorial-article) reader)
+(defmethod read-document :around ((article tutorial-article) (reader rst-reader))
   (let ((document (call-next-method)))
     (setf (slot-value  article 'assessments)
           (mapcar
@@ -1022,23 +1022,13 @@ report."
   (when (typep parent-node 'docutils.nodes:document)
     (docutils.parser.rst::insert-metadata source reader parent-node)))
 
-(defclass recursive-article-reader(article-rst-reader)
-  ()
-  (:default-initargs
-   :pre-parse-hooks
-      (list #'docutils.parser.rst::insert-title #'insert-tutorial-metadata)
-    :post-parse-hooks
-    (list #'docutils.parser.rst::read-subsections))
-  (:documentation "Article reader which will recurse down subsections"))
-
-
 (defun full-document(article)
   (let ((*search-path* (list (path-to-media article)))
         (*unknown-reference-resolvers*
          (cons #'resolve-rfc-reference
                (cons #'(lambda(node) (resolve-article-reference article node))
                      *unknown-reference-resolvers*))))
-    (read-document article (make-instance 'recursive-article-reader))))
+    (read-document article (make-instance 'docutils.parser.rst::recursive-rst-reader))))
 
 
 
@@ -1049,8 +1039,8 @@ report."
 
 (in-package :clews.articles)
 (defvar *a* (get-dictionary "pulse-modulation" aston::*tutorials*))
-
-
+(defvar *a* (get-dictionary "analogue-pulse-modulation-schemes" aston::*tutorials*))
+(defvar *d* (full-document *a*))
 (defvar *w* (make-instance 'article-latex-writer))
-(docutils:write-document *w* (document *a*) *standard-output*)
+(docutils:write-document *w* (full-document *a*) *standard-output*)
 |#

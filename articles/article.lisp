@@ -218,17 +218,17 @@ article"))
 
 (defmethod update-record-from-instance((instance article))
   (assert-permission :edit instance)
-    (let ((text (text instance)))
-      (with-article-file(os bs instance :direction :output)
-        (jarw.io:write-headers
-         (nconc (field-values instance)
-                (unparsed-values instance))
-         :stream os :preserve-newlines-p t)
-        (terpri os)
-        (setf (slot-value instance 'content-file-position)
-              (file-position bs))
-        (write-sequence text os)))
-    (values))
+  (let ((text (text instance)))
+    (with-article-file(os bs instance :direction :output)
+      (jarw.io:write-headers
+       (nconc (field-values instance)
+              (unparsed-values instance))
+       :stream os :preserve-newlines-p t)
+      (terpri os)
+      (setf (slot-value instance 'content-file-position)
+            (file-position bs))
+      (write-sequence text os)))
+  (values))
 
 (defmethod text((article article))
   (with-article-file(is bs article :direction :input)
@@ -329,7 +329,7 @@ article"))
         (setf (document article)
               (read-document article (document-reader article))))))
 
-(defmethod read-document :around ((article article) reader)
+(defmethod read-document :around ((article article) (reader rst-reader))
   "Update errors and targets from a newly read document"
   (handler-bind ;; ALL errors here are terminal and are reported in document
       ((error #'(lambda(e) (docutils::report :terminal (format nil "~S" e)))))

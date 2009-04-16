@@ -16,7 +16,7 @@
 ;;; which willuse locks to protect against reentrance
 (in-package :clews.articles)
 
-(defclass article-rst-reader(docutils.parser.rst::extended-rst-reader)
+(defclass article-rst-reader(docutils.parser.rst::rst-reader)
   ()
   (:documentation "Specialisation parser for articles"))
 
