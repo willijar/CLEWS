@@ -990,27 +990,22 @@ report."
                        (title (cdr line)))))))
        (some #'second reports))))))
 
-(defun set-deadlines(collection user articlename newdeadline
-                     &key (recurse t))
-  (let* ((article (get-dictionary articlename collection))
-         (deadline (jarw.parse:parse-input 'date newdeadline))
-         (userstate (user-state collection user))
-         (articles (if recurse
-                      (cons article (children article))
-                      (list article))))
-    (mapcar
-     #'(lambda(article)
-         (let ((astate (user-state article userstate)))
-           (mapcar
-            #'(lambda(assessment)
-                (let* ((knowledge (assessment-knowledge astate assessment))
-                       (d (deadline-date knowledge assessment)))
-                  (format t "~S~%~S~%~S~%"
-                          article
-                          assessment
-                          knowledge)))
-            (assessments article))))
-     articles)))
+;; (defun set-deadlines(collection user articlename newdeadline
+;;                      &key (recurse t))
+;;   (let* ((article (get-dictionary articlename collection))
+;;          (deadline (jarw.parse:parse-input 'date newdeadline))
+;;          (userstate (user-state collection user))
+;;          (articles (if recurse
+;;                       (cons article (children article))
+;;                       (list article))))
+;;     (mapcar
+;;      #'(lambda(article)
+;;          (let ((astate (user-state article userstate)))
+;;            (mapcar
+;;             #'(lambda(assessment)
+;;                 (let* ((knowledge (assessment-knowledge astate assessment)))
+;;             (assessments article))))
+;;      articles)))
 
 (defmethod docutils.parser.rst::title((source article))
   (title source))
@@ -1026,9 +1021,12 @@ report."
   (let ((*search-path* (list (path-to-media article)))
         (*unknown-reference-resolvers*
          (cons #'resolve-rfc-reference
-               (cons #'(lambda(node) (resolve-article-reference article node))
+               (cons #'(lambda(node)
+                         (resolve-article-reference
+                          article node #'nameids #'resolve-to-id))
                      *unknown-reference-resolvers*))))
-    (read-document article (make-instance 'docutils.parser.rst::recursive-rst-reader))))
+    (read-document article
+                   (make-instance 'docutils.parser.rst::recursive-rst-reader))))
 
 
 
@@ -1038,9 +1036,15 @@ report."
 #|
 
 (in-package :clews.articles)
-(defvar *a* (get-dictionary "pulse-modulation" aston::*tutorials*))
 (defvar *a* (get-dictionary "analogue-pulse-modulation-schemes" aston::*tutorials*))
 (defvar *d* (full-document *a*))
-(defvar *w* (make-instance 'article-latex-writer))
-(docutils:write-document *w* (full-document *a*) *standard-output*)
+(defvar *w* (make-instance
+             'article-latex-writer
+             :settings '((:latex-document-class . "article")
+                         (:latex-document-options . "10pt,a4paper,twocolumn")
+                         (:use-latex-docinfo . t))))
+
+
+(with-open-file(os #p"/home/willijar/dev/lisp/src/docutils/tests/tmp.tex" :direction :output :if-does-not-exist :create :if-exists :supersede) (docutils:write-document *w* *d* os))
+
 |#

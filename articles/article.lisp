@@ -263,27 +263,44 @@ article"))
   (slot-makunbound instance 'document)
   text)
 
-(defun resolve-article-reference(article node &optional (nameids #'nameids))
+(defun resolve-to-uri(node article &optional id)
+  "Resolves or a uri on the server"
+  (docutils:rem-attribute node :refname)
+  (setf (docutils:attribute node :refuri)
+        (format nil "../~A/view~@[#~A~]" (id article) id)
+        (docutils:as-text (docutils:child node 0))
+        (title article)
+        (docutils:resolved node) t))
+
+(defun titleid(article)
+  (docutils::make-id (docutils::normalise-name (title article))))
+
+(defun resolve-to-id(node article &optional id)
+  "Resolves to an id in the article collection"
+  (docutils:rem-attribute node :refname)
+  (if id
+      (setf (docutils:attribute node :refid) id)
+      (setf (docutils:attribute node :refid) (titleid article)
+            (docutils:as-text (docutils:child node 0)) (title article)))
+  (setf (docutils:resolved node) t))
+
+(defun resolve-article-reference(article node &optional
+                                 (nameids #'nameids)
+                                 (resolver #'resolve-to-uri))
   (let ((collection (collection article))
         (refname (docutils:attribute node :refname)))
-    (flet((resolve(article &optional id)
-            (docutils:rem-attribute node :refname)
-            (return-from resolve-article-reference
-              (setf (docutils:attribute node :refuri)
-                    (format nil "../~A/view~@[#~A~]" (id article) id)
-                    (docutils:as-text (docutils:child node 0))
-                    (format nil "~A" (title article) )
-                    (docutils:resolved node) t))))
     (when refname
       (let ((other (get-dictionary refname collection )))
-        (when other (resolve other)))
-      (map-dictionary
-       #'(lambda(dummy other)
-           (declare (ignore dummy))
-           (unless (eql other article)
-             (let ((id (gethash refname (funcall nameids other))))
-               (when id (resolve other id)))))
-       collection)))))
+        (if other
+            (funcall resolver node other)
+            (map-dictionary
+             #'(lambda(dummy other)
+                 (declare (ignore dummy))
+                 (unless (eql other article)
+                   (let ((id (gethash refname (funcall nameids other))))
+                     (when id (return-from resolve-article-reference
+                                (funcall resolver node other id))))))
+             collection))))))
 
 (defun resolve-rfc-reference(node)
   (let ((refname (docutils:attribute node :refname)))
@@ -384,7 +401,7 @@ article"))
                 (<= config-modified
                     (cdr (slot-value collection 'document-settings)))))
        (car (slot-value collection 'document-settings))
-       (let ((settings (get-settings (path-to-articles collection))))
+       (let ((settings (settings (path-to-articles collection))))
          (setf (slot-value collection 'document-settings)
                (cons settings now))
          settings)))))
