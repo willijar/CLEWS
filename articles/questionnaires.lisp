@@ -404,3 +404,29 @@ or continue this assessment if you are sure you know what you are doing. "))
                                       *assessment-base-url*
                                       (inet.uri:uri-escape (string (name assessment)))))
                     "Feedback on your answers"))))))))
+
+(register-settings-spec
+ `((:latex-assessment-render
+    (member :type symbol :set (nil :status :questions :feedback))
+    :status
+    "How assessments are to be rendered in latex documents")))
+
+
+(defmethod docutils.writer.latex::visit-node
+    ((writer docutils.writer.latex::latex-writer)
+     (assessment questionnaire))
+  (let ((render (setting :latex-assessment-render (document assessment))))
+    (when render
+      (let ((knowledge
+             (when *user-data*
+               (dictionary:get-dictionary (name assessment) *user-data*))))
+        (setq *knowledge* knowledge
+              *assessment* assessment)
+        (ccase render
+          (:status
+           (part-append
+            (format nil
+                    "\\begin{assessment}~%~A~%\\caption{~A}~%\\end{assessment}~%"
+            (with-output-to-string(os)
+              (markup:latex os (assessment-status-table knowledge assessment)))
+            (string (name assessment))))))))))

@@ -46,7 +46,7 @@
                 #:read-document #:write-part #:title #:abstract
                 #:new-document #:read-lines
                 #:as-text #:with-children #:child #:attribute
-                #:new-document #:read-lines #:get-settings
+                #:new-document #:read-lines #:settings
                 #:*unknown-reference-resolvers*
                 #:document  #:write-part)
   (:import-from :rfc2822 #:skip-spaces #:token
