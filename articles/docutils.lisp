@@ -65,7 +65,7 @@ You need editorial access to view the details</p>
   (:documentation "Given a list of sections made of a stream and a
 list of part names, write these sections to the streams")
   (:method(writer  document sections)
-    (setf (document writer) document)
+    (docutils:visit-node writer document)
     (dolist(section sections)
       (let ((os (car section)))
         (dolist(part (rest section))
