@@ -1036,15 +1036,29 @@ report."
 #|
 
 (in-package :clews.articles)
-(defvar *a* (get-dictionary "analogue-pulse-modulation-schemes" aston::*tutorials*))
+(defvar *a* (get-dictionary "pulse-modulation" aston::*tutorials*))
 (defvar *d* (full-document *a*))
 (defvar *w* (make-instance
-             'article-latex-writer
+             'latex-writer
              :settings '((:latex-document-class . "article")
                          (:latex-document-options . "10pt,a4paper,twocolumn")
                          (:use-latex-docinfo . t))))
 
 
 (with-open-file(os #p"/home/willijar/dev/lisp/src/docutils/tests/tmp.tex" :direction :output :if-does-not-exist :create :if-exists :supersede) (docutils:write-document *w* *d* os))
+
+(with-open-file(os #p"/home/willijar/dev/lisp/src/docutils/tests/tmp.tex" :direction :output :if-does-not-exist :create :if-exists :supersede)
+  (let ((os (make-instance 'docutils.writer.latex:latex-output-stream :stream os)))
+    (docutils:write-document *w* *d* os)
+    (close os)))
+
+To Fix:
+
+6. Tables - line and hlines?
+
+(docutils:collate-nodes(n *d*) (typep n 'docutils.nodes:table))
+(setq *w* (make-instance 'article-html-writer))
+(with-open-file(os #p"/home/willijar/dev/lisp/src/docutils/tests/tmp.html" :direction :output :if-does-not-exist :create :if-exists :supersede) (docutils:write-document *w* *d* os))
+
 
 |#

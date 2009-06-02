@@ -287,17 +287,26 @@ article"))
 (defun resolve-article-reference(article node &optional
                                  (nameids #'nameids)
                                  (resolver #'resolve-to-uri))
+  "Resolve references across articles - also try name without namespace"
   (let ((collection (collection article))
         (refname (docutils:attribute node :refname)))
     (when refname
-      (let ((other (get-dictionary refname collection )))
+      (let* ((name
+              (multiple-value-bind(pfx name)
+                  (docutils.utilities:namespace refname)
+                (declare (ignore pfx))
+               name))
+            (other (get-dictionary name collection )))
         (if other
             (funcall resolver node other)
             (map-dictionary
              #'(lambda(dummy other)
                  (declare (ignore dummy))
                  (unless (eql other article)
-                   (let ((id (gethash refname (funcall nameids other))))
+                   (let ((id (or (gethash refname (funcall nameids other))
+                                 (gethash name (funcall nameids other)))))
+                     (format t "~S or ~S -> ~S~%"
+                             refname name id)
                      (when id (return-from resolve-article-reference
                                 (funcall resolver node other id))))))
              collection))))))

@@ -40,7 +40,7 @@
   (:import-from :inet.http #:query-values)
   (:import-from :docutils.parser.rst #:rst-reader)
   (:import-from :docutils.writer.html #:html-writer)
-  (:import-from :docutils.writer.latex #:latex-writer)
+  (:import-from :docutils.writer.latex #:latex-writer #:latex-output-stream)
   (:import-from :docutils
                 #:*unknown-reference-resolvers* #:document
                 #:read-document #:write-part #:title #:abstract
