@@ -296,7 +296,7 @@ article"))
                   (docutils.utilities:namespace refname)
                 (declare (ignore pfx))
                name))
-            (other (get-dictionary name collection )))
+            (other (get-dictionary name collection)))
         (if other
             (funcall resolver node other)
             (map-dictionary
@@ -305,8 +305,6 @@ article"))
                  (unless (eql other article)
                    (let ((id (or (gethash refname (funcall nameids other))
                                  (gethash name (funcall nameids other)))))
-                     (format t "~S or ~S -> ~S~%"
-                             refname name id)
                      (when id (return-from resolve-article-reference
                                 (funcall resolver node other id))))))
              collection))))))

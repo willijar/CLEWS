@@ -112,12 +112,7 @@
                     (rest (mapcar #'heirarchy (rest tree))))
                 (if rest (nconc li `(((ul :class "condensed")  ,@rest))) li))))
 
-      (let ((next-in-sequence
-             (second
-              (member article
-                      (children (first (goals (collection article)
-                                              *current-user*))))))
-            (next-recommended  (next-article *current-user* article)))
+      (let ((next-recommended  (next-article *current-user* article)))
         `(((ul :class "condensed")
            ,(heirarchy
              (let ((goals (goals (collection article) *current-user*)))
@@ -127,13 +122,10 @@
                    (child-heirarchy
                     (find-if #'(lambda(goal) (is-child goal article)) goals)
                     article)))))
-;;          ,@(when next-in-sequence
-;;                  `((p (b "Next"))
-;;                    (ul ,(list-item next-in-sequence))))
           ,@(when next-recommended
-                  `((p (b "Next Recommended"))
-                    (ul
-                     ,(list-item next-recommended)))))))))
+              `((p (b "Next Recommended"))
+                (ul
+                 ,(list-item next-recommended)))))))))
 
 (defmethod title-section((article tutorial-article) request)
   (declare (ignore request))
@@ -265,22 +257,13 @@ clockTick();
 
 (defmethod sections((article tutorial-article))
   (let ((sections (call-next-method)))
-    (flet((insert-before(name action)
-            (let ((sub (member name sections
-                               :test #'equalp :key #'action-name)))
-              (setf (cdr sub) (cons (car sub) (cdr sub))
-                    (car sub) action))))
-      #+nil(insert-before "title"
-                     (make-action
-                      :name "prerequisites"
-                      :permission :view
-                      :handler #'prerequisites-section))
-      (nconc
-       (list (make-action :name "map" :permission :view
-                          :handler #'child-heirarchy-section))
-       sections))))
+    (nconc
+     (list (make-action :name "map" :permission :view
+                        :handler #'child-heirarchy-section))
+       sections)))
 
-(defmethod format-output((spec (eql '%)) value &key (places 1) &allow-other-keys)
+(defmethod format-output((spec (eql '%)) value &key (places 1)
+                         &allow-other-keys)
   (if value
       (format nil (format nil "~~,~DF%" places) (* 100 value))
       "%"))

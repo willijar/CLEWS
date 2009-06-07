@@ -38,7 +38,7 @@
   (:import-from :jarw.port  #:make-weak-pointer #:weak-pointer-value
                 #:make-mutex #:with-lock)
   (:import-from :inet.http #:query-values)
-  (:import-from :docutils.parser.rst #:rst-reader)
+  (:import-from :docutils.parser.rst #:rst-reader #:recursive-rst-reader)
   (:import-from :docutils.writer.html #:html-writer)
   (:import-from :docutils.writer.latex #:latex-writer #:latex-output-stream)
   (:import-from :docutils

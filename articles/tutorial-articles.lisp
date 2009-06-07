@@ -230,6 +230,19 @@ be considered completed")
            (assessments document)))
     document))
 
+(defmethod read-document :around ((article tutorial-article) (reader recursive-rst-reader))
+  (let ((document (call-next-method)))
+    (map 'nil
+         #'(lambda(assessment)
+             (change-class
+              assessment
+              'article-questionnaire
+              :article (dictionary:get-dictionary
+                        (docutils.utilities:namespace assessment)
+                        (collection article))))
+         (assessments document))
+    document))
+
 (defmethod assessments :before ((article tutorial-article))
   (unless (slot-boundp article 'document) (document article)))
 
@@ -776,6 +789,36 @@ possible new ones"
 (defmethod title((q article-questionnaire))
   (title (article q)))
 
+;; (defmethod docutils.writer.latex::visit-node
+;;     ((writer docutils.writer.latex::latex-writer)
+;;      (assessment article-questionnaire))
+;;   (let ((render (setting :latex-assessment-render (document assessment))))
+;;     (when render
+;;       (let ((knowledge
+;;              (when *articles*
+;;                (dictionary:get-dictionary
+;;                 (name assessment)
+;;                 (clews.articles::user-state
+;;                  (dictionary:get-dictionary
+;;                   (docutils.utilities:namespace assessment) *articles*)
+;;                  inet.acl::*current-user*)))))
+;;         (setq *assessment* assessment
+;;               *knowledge* knowledge)
+;;         (break)
+
+;;         (ccase render
+;;           (:status
+;;            (part-append
+;;             (format nil "\\begin{assessment}
+;; ~@[\\item ~A~%~]~@[\\item[\\em Deadline:] ~A~%~]\\item[\\em No Questions:] ~A
+;; ~@[\\item[\\em Time Allowed:] ~A~~min~%~]\\end{assessment}~%"
+;;                     (clews.assessment::description assessment)
+;;                     (clews.assessment::deadline-date knowledge assessment)
+;;                     (clews.assessment::set-no-questions nil assessment)
+;;                     (let ((tt (clews.assessment::timelimit nil assessment)))
+;;                       (when tt (/ tt 60)))))))))))
+
+
 (defun lookup-date(user article fieldname)
   (when user
     (flet((return-if-deadline(article)
@@ -1013,6 +1056,9 @@ report."
 (defmethod docutils.parser.rst::subsections((source tutorial-article))
   (direct-children source))
 
+(defmethod docutils.utilities:namespace((source article))
+  (id source))
+
 (defun insert-tutorial-metadata(source reader parent-node)
   (when (typep parent-node 'docutils.nodes:document)
     (docutils.parser.rst::insert-metadata source reader parent-node)))
@@ -1036,29 +1082,38 @@ report."
 #|
 
 (in-package :clews.articles)
-(defvar *a* (get-dictionary "pulse-modulation" aston::*tutorials*))
-(defvar *d* (full-document *a*))
-(defvar *w* (make-instance
+(defparameter *a* (get-dictionary "digital-transmission" aston::*tutorials*))
+(defparameter *d* (full-document *a*))
+(defparameter *w* (make-instance
              'latex-writer
              :settings '((:latex-document-class . "article")
                          (:latex-document-options . "10pt,a4paper,twocolumn")
-                         (:use-latex-docinfo . t))))
+                         (:use-latex-docinfo . t)
+                         (:latex-stylesheet . "jarw-math.tex"))))
 
+(defparameter *u* (setf inet.acl::*current-user*
+                        (get-dictionary "willijar" aston::*user-source*)))
+
+(setq docutils.assessment::*articles* aston::*tutorials*)
+(updated-goals docutils.assessment::*articles* *current-user*)
+
+(defparameter (docutils.assessment::*user-data*
+               (user-state article *u*))
 
 (with-open-file(os #p"/home/willijar/dev/lisp/src/docutils/tests/tmp.tex" :direction :output :if-does-not-exist :create :if-exists :supersede) (docutils:write-document *w* *d* os))
 
-(with-open-file(os #p"/home/willijar/dev/lisp/src/docutils/tests/tmp.tex" :direction :output :if-does-not-exist :create :if-exists :supersede)
-  (let ((os (make-instance 'docutils.writer.latex:latex-output-stream :stream os)))
-    (docutils:write-document *w* *d* os)
-    (close os)))
 
 To Fix:
 
-6. Tables - line and hlines?
 
-(docutils:collate-nodes(n *d*) (typep n 'docutils.nodes:table))
-(setq *w* (make-instance 'article-html-writer))
-(with-open-file(os #p"/home/willijar/dev/lisp/src/docutils/tests/tmp.html" :direction :output :if-does-not-exist :create :if-exists :supersede) (docutils:write-document *w* *d* os))
+clean oven and hobb
 
+* article-questionnaire specialise rendering.
+
+* redraw msk-transmitter
+
+* Tables - line and hlines?
+
+* small non-breaking spaces for units and other non-breaking spaces??
 
 |#

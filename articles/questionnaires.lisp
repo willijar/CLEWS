@@ -358,6 +358,8 @@ construct the question"))
 (defvar *user-data* nil
   "Dictionary which with a questionnaire name will return user data")
 
+(defvar *articles* nil)
+
 (defvar *assessment-base-url*  "../assessment/"
   "Base url for questionnaires")
 
@@ -411,22 +413,27 @@ or continue this assessment if you are sure you know what you are doing. "))
     :status
     "How assessments are to be rendered in latex documents")))
 
+(defun source(node)
+  (or (attribute node :source)
+      (let ((parent (parent node)))
+        (when parent (source parent)))))
 
 (defmethod docutils.writer.latex::visit-node
     ((writer docutils.writer.latex::latex-writer)
      (assessment questionnaire))
   (let ((render (setting :latex-assessment-render (document assessment))))
     (when render
-      (let ((knowledge
-             (when *user-data*
-               (dictionary:get-dictionary (name assessment) *user-data*))))
-        (setq *knowledge* knowledge
-              *assessment* assessment)
-        (ccase render
-          (:status
-           (part-append
-            (format nil
-                    "\\begin{assessment}~%~A~%\\caption{~A}~%\\end{assessment}~%"
-            (with-output-to-string(os)
-              (markup:latex os (assessment-status-table knowledge assessment)))
-            (string (name assessment))))))))))
+      (ccase render
+        (:status
+         (part-append
+          (format nil "\\begin{assessment}
+~@[\\item ~A~%~]~@[\\item[\\em Deadline:] ~A~%~]\\item[\\em No Questions:] ~A
+~@[\\item[\\em Time Allowed:] ~A~~min~%~]\\end{assessment}~%"
+                  (clews.assessment::description assessment)
+                  (let ((deadline
+                         (clews.assessment::deadline-date nil assessment)))
+                    (when deadline
+                      (jarw.parse::format-output 'jarw.parse:date deadline)))
+                  (clews.assessment::set-no-questions nil assessment)
+                  (let ((tt (clews.assessment::timelimit nil assessment)))
+                    (when tt (/ tt 60))))))))))
