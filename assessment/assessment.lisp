@@ -494,7 +494,7 @@ assessment has now passed and further attempts are not recommended."
   (let ((deadline-date (deadline-date knowledge assessment))
         (feedback-date (feedback-date knowledge assessment)))
     (nconc
-     (when (and (assessment-attempt-p knowledge assessment) deadline-date)
+     (when deadline-date
        (list (cons "Deadline" (datestring deadline-date))))
      (when (completed knowledge)
        (list (cons "Feedback Available"
@@ -509,7 +509,7 @@ assessment has now passed and further attempts are not recommended."
 
 (defmethod assessment-status-short append (knowledge (assessment scheduled))
   (let ((deadline-date (deadline-date knowledge assessment)))
-    (when (and deadline-date (assessment-attempt-p knowledge assessment))
+    (when deadline-date
       (list (format nil "Deadline ~A" (datestring deadline-date))))))
 
 (defmethod time-remaining list (knowledge (assessment scheduled))
@@ -591,6 +591,13 @@ strictly enforced timelimit of ~D minutes for this assessment."
                   (format nil "~,1F minutes ~:[~; (Strictly enforced)~]"
                           (/ timelimit 60.0)
                           (strict-timelimit-p assessment)))))))
+
+(defmethod assessment-status-short append (knowledge (assessment timelimited))
+  (let ((timelimit (timelimit knowledge assessment)))
+    (when timelimit
+      (list (format nil "Time limit ~,1F minutes~:[~; (Strictly enforced)~]"
+                    (/ timelimit 60.0)
+                    (strict-timelimit-p assessment))))))
 
 (defmethod assessment-mark :around (knowledge (assessment timelimited))
   (let ((mark (call-next-method))

@@ -321,19 +321,20 @@ attributes upon creation of the question"))
 (defclass numeric-q(simple-question)
   ((answer :initarg :answer)
    (tol :initarg :tol :type real :initform 0.01)
+   (radix :initarg :radix :type integer :initform 10)
    (fmt :initarg :format :type string :initform "~,3G"))
   (:default-initargs :type '(number :format "@,3G") :default 0)
   (:documentation "A numeric question"))
 
 (defmethod datatype((q numeric-q))
-  `(number :format ,(slot-value q 'fmt)))
+  `(number :format ,(slot-value q 'fmt) :radix ,(slot-value q 'radix)))
 
 (defmethod markup((question numeric-q))
   `((input
      :name ,(name question)
      :align :right
-     :size
-     ,(+ 8 (round (abs (log (slot-value question 'tol) 10)))))))
+     :datatype ,(datatype question)
+     :size ,(+ 8 (round (abs (log (slot-value question 'tol) 10)))))))
 
 (defmethod  question-mark((question numeric-q))
   (let* ((a  (submitted-value (user-record question)))
@@ -345,7 +346,7 @@ attributes upon creation of the question"))
         1 0 )))
 
 (defmethod feedback ((question numeric-q))
-  `((p ,(format nil "The correct answer is ~@? "
+  `((p ,(format nil "The correct answer is ~@?. "
                 (slot-value question 'fmt)
                 (slot-value question 'answer))
      ,(suffix question))
