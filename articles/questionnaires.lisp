@@ -53,7 +53,7 @@ assessment questionnaire later"))
 
 ;; question specifications are the children of the questionnaire node
 
-(defclass question-specification(node)
+(defclass question-specification(compound)
   ((name :type symbol :initarg :name :reader name)
    (question-type :type symbol :initarg :type
                   :documentation "Question type to be made")
@@ -81,9 +81,9 @@ construct the question"))
           (slot-value node 'docutils:parent))
     (docutils.transform:evaluate copy)))
 
-(defmethod initialize-instance :after((spec question-specification)
-                                      &key &allow-other-keys)
-  (with-slots(question-type initargs vars factory name) spec
+(defmethod factory((spec question-specification))
+  (unless (slot-boundp spec 'factory)
+      (with-slots(question-type initargs vars factory name) spec
     (setf
      factory
      (labels ((varname(arg) (car arg))
@@ -91,7 +91,6 @@ construct the question"))
               (value(arg) (second arg)))
        (let ((g-param (gensym))
              (g-user-data (gensym)))
-
          `(lambda(,g-user-data)
            (let ((,g-param (rest ,g-user-data)))
              (let* ,(mapcar
@@ -111,24 +110,24 @@ construct the question"))
                                     (if (typep (cadr a) 'node)
                                         `(copy-eval ,(cadr a))
                                         `(eval ',(cadr a))))))))))))))
+  (slot-value spec 'factory))
 
 (defmethod allowed-child-p((q questionnaire) child &optional index)
   ;; questionnaire can have nodes as per itsd base class then a set of
   ;; question specifications.
   (unless index (setf index (number-children q)))
   (or (typep child 'question-specification)
+      (typep child 'docutils.nodes::system-message)
       (and (or (= 0 index)
                (not (typep (child q (1- index))
                            'question-specification)))
            (call-next-method))))
 
-(defmethod init-question-specifications((questionnaire questionnaire) defs)
-  (declare (ignore defs)))
 
 (defmethod make-question(id (spec question-specification)
                          &optional (user-record
                                     (clews.assessment::make-user-record)))
-  (make-question id (eval (slot-value spec 'factory))  user-record))
+  (make-question id (eval (factory spec))  user-record))
 
 (defvar *questionnaire-directives*
   (make-instance 'dictionary:shadow-dictionary
@@ -191,34 +190,50 @@ construct the question"))
         (mark (question-mark question)))
     `(((div :class "feedback")
        ,text
+       (div
        "Your answer: "
         ,@(element-markup (markup question)
                           (submitted-value
                            (user-record question))
                           t)
        ,(suffix question))
-      (b ,(if (= mark 0) "Wrong: " (if (= mark 1) "Correct: ")))
-       " Mark " ,mark
-      ,@feedback)))
+      (p (b ,(if (= mark 0) "Wrong: " (if (= mark 1) "Correct: ")))
+         " Mark " ,mark)
+       (div ,@feedback)))))
 
-(defun make-value-compound(argname field)
+(defun make-value-compound(argname field parent)
   ;; note the field is modified by this method
   (let ((node (make-instance
                'compound
                :attributes (list :class (string argname))
                :line (docutils:line (child field 1)))))
-    (setf (slot-value node 'docutils::parent) (parent field))
+    (when parent (add-child parent node))
     (docutils::move-children (child field 1) node)
     node))
 
-(defun decode-question-args(fieldlist &key formatted unformatted)
+(defun decode-question-args(parent parser
+                            &key id type params formatted unformatted
+                            argsfilter)
   "Return containers with field-body nodes as values corresponding to argspec"
-  (let ((results nil))
+  (let ((results nil)
+        (fieldlist (make-instance 'docutils.nodes:field-list))
+        (spec (make-instance
+                   'question-specification
+                   :name
+                   (intern (docutils.utilities:normalise-name id) :keyword)
+                   :type type
+                   :params params)))
+    (add-child parent spec)
+    (add-child spec fieldlist)
+    (funcall parser fieldlist
+             :states '(docutils.parser.rst::field-list)
+             :initial-state 'docutils.parser.rst::field-list)
     (with-children(field fieldlist)
       (let ((argname (intern (string-upcase (strip (as-text (child field 0)))) :keyword)))
         (cond
           ((member argname formatted)
-           (setf (getf results argname) (make-value-compound argname field)))
+           (setf (getf results argname)
+                 (make-value-compound argname field spec)))
           ((member argname unformatted)
            (let ((value  (child field 1)))
              (if (and (= 1 (number-children value))
@@ -231,17 +246,20 @@ construct the question"))
               :error
               `("~A is not a recognised option for this question type: Allowed options are ~S"
                 ,argname ,(append formatted unformatted)))))))
-    results))
+    (when argsfilter (funcall argsfilter results))
+    (setf (slot-value spec 'initargs) results)
+    (values fieldlist results)))
 
 (defclass numeric-q(rst-question clews.assessment:numeric-q)
   ())
 
 (defmethod feedback ((question numeric-q))
-  `(,(format nil "The correct answer is ~@? "
+  `((p ,(format nil "The correct answer is ~@? "
                 (slot-value question 'clews.assessment::fmt)
                 (slot-value question 'clews.assessment::answer))
-     ,(suffix question)
-    ,(slot-value question 'clews.assessment::feedback)))
+       ,(suffix question))
+    (div
+    ,(slot-value question 'clews.assessment::feedback))))
 
 (defclass multiple-choice-q(rst-question clews.assessment:multiple-choice-q)
   ()
@@ -255,7 +273,7 @@ construct the question"))
               (let ((results nil))
                 (with-children(field (slot-value question 'clews.assessment::choices))
                   (push (cons (read-from-string (as-text (child field 0)))
-                              (make-value-compound "choice" field))
+                              (make-value-compound "choice" field nil))
                         results))
                 (nreverse results))))))
 
@@ -288,72 +306,43 @@ construct the question"))
   (def-directive numeric (parent id
                                    &option (params (read :multiplep t))
                                    &content-parser parser)
-    (add-child parent
-               (make-instance
-                'question-specification
-                :name
-                (intern (docutils.utilities:normalise-name id) :keyword)
-                :type 'numeric-q
-                :params params
-                :args
-                (decode-question-args
-                 (let ((node (make-instance 'docutils.nodes:field-list)))
-                   (setf (slot-value node 'docutils::parent) parent)
-                   (funcall parser node
-                            :states '(docutils.parser.rst::field-list)
-                            :initial-state 'docutils.parser.rst::field-list)
-                   node)
-                 :formatted '(:question :feedback :suffix)
-                 :unformatted '(:weighting :default :answer :tol :format)))))
+    (decode-question-args
+     parent parser
+     :id id
+     :type 'numeric-q
+     :params params
+     :formatted '(:question :feedback :suffix)
+     :unformatted '(:radix :weighting :default :answer :tol :format)))
 
   (def-directive multiple-choice
       (parent id
               &option (params (read :multiplep t))
               &content-parser parser)
-    (let ((args (decode-question-args
-                 (let ((node (make-instance 'docutils.nodes:field-list)))
-                   (setf (slot-value node 'docutils::parent) parent)
-                   (funcall parser node
-                            :states '(docutils.parser.rst::field-list)
-                            :initial-state 'docutils.parser.rst::field-list)
-                   node)
-                 :formatted '(:question :feedback :suffix :choices)
-                 :unformatted '(:weighting :default :answer :style
-                                :randomise :allow-no-answer))))
-      (setf (getf args :choices)
-            (child (getf args :choices) 0))
-    (add-child parent
-               (make-instance
-                'question-specification
-                :name
-                (intern (docutils.utilities:normalise-name id) :keyword)
-                :type 'multiple-choice-q
-                :params params
-                :args args))))
+    (decode-question-args
+     parent parser
+     :id id
+     :type 'multiple-choice-q
+     :params params
+     :formatted '(:question :feedback :suffix :choices)
+     :unformatted '(:weighting :default :answer :style
+                    :randomise :allow-no-answer)
+     :argsfilter #'(lambda(args)
+                     (setf (getf args :choices) (child (getf args :choices) 0)))))
 
   (def-directive multiple-answer
       (parent id
               &option (params (read :multiplep t))
               &content-parser parser)
-    (let ((args (decode-question-args
-                 (let ((node (make-instance 'docutils.nodes:field-list)))
-                   (setf (slot-value node 'docutils::parent) parent)
-                   (funcall parser node
-                            :states '(docutils.parser.rst::field-list)
-                            :initial-state 'docutils.parser.rst::field-list)
-                   node)
-                 :formatted '(:question :feedback :suffix :choices)
-                 :unformatted '(:weighting :default :answer :style
-                                :randomise :allow-no-answer))))
-      (setf (getf args :choices) (child (getf args :choices) 0))
-    (add-child parent
-               (make-instance
-                'question-specification
-                :name
-                (intern (docutils.utilities:normalise-name id) :keyword)
-                :type 'multiple-answer-q
-                :params params
-                :args args)))))
+    (decode-question-args
+     parent parser
+     :id id
+     :type 'multiple-answer-q
+     :params params
+     :formatted '(:question :feedback :suffix :choices)
+     :unformatted '(:weighting :default :answer :style
+                    :randomise :allow-no-answer)
+     :argsfilter #'(lambda(args)
+                      (setf (getf args :choices) (child (getf args :choices) 0))))))
 
 (defvar *user-data* nil
   "Dictionary which with a questionnaire name will return user data")
