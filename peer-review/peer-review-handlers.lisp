@@ -182,20 +182,22 @@ peer review system and to how it is assessed.")
   (let* ((idx (article-index app))
          (user (remote-user request))
          (username (username user)))
-    (flet ((make-links(idx &key (count (min 12 (1- (length idx)))) extra prefix suffix)
-             (mapcan
-              #'(lambda(entry)
-                  (nconc
-                   (list
-                    `((a :href ,(concatenate
-                                 'string prefix
-                                 (slot-value entry 'id)
-                                 suffix))
-                      ,(slot-value entry 'title)))
-                   (when extra
-                     (list " (" (funcall extra entry) ")"))
-                   (list " | ")))
-              (subseq idx 0 count)))
+    (flet ((make-links(idx &key (count (min 12 (1- (length idx))))
+                           extra prefix suffix)
+             (when (and count (> count 1))
+               (mapcan
+                #'(lambda(entry)
+                    (nconc
+                     (list
+                      `((a :href ,(concatenate
+                                   'string prefix
+                                   (slot-value entry 'id)
+                                   suffix))
+                        ,(slot-value entry 'title)))
+                     (when extra
+                       (list " (" (funcall extra entry) ")"))
+                     (list " | ")))
+                (subseq idx 0 count))))
            (entry-mark(e) (format nil "~D" (round (mark e))))
            (entry-date(e) (format-time nil  (created e) :fmt :date-only)))
       (multiple-value-bind (mark no-articles no-reviews average-article-mark

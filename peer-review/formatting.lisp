@@ -93,7 +93,7 @@ peer review"))
                                      "Unable to continue parsing document"))
                 (docutils:document node))))))
     (fix-image-links document (format nil "~A/images/~A-" path-to-root id))
-    (setf (docutils:document writer) document)
+    (docutils::visit-node writer document)
     (with-output-to-string(os)
       (docutils:write-part writer 'docutils.writer.html:body os))))
 
