@@ -227,6 +227,7 @@ value."
   ((module-type :accessor module-type :type (string 10)
                 :initarg :type :initform "Taught"
                 :column "module_type")
+   (advisor :accessor advisor :type (string 50) :initarg :advisor)
    (module-replaces :accessor module-replaces :type (string 10)
                     :initarg :replaces :initform nil
                     :column "module_replaces")
@@ -424,6 +425,7 @@ value."
 \\entry{Involvement of Other Schools}{None}
 \\entry{Resource Split}{}
 \\entry{Name of Module Co-ordinator}{" ,(fullname (owner module)) "}
+\\entry{Name of Module Advisor}{" ,(when (advisor module) (fullname (advisor module))) "}
 Related Modules
  & Pre-requisites & \\multicolumn{3}{p{3\\colwidth}|}{"
        ,@(or (related-moduleids module "prerequisites") (list "None"))

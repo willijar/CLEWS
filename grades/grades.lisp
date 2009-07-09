@@ -1161,9 +1161,8 @@ module"
                              (format t "s=~A m=~S~%" s m)))
                          (copy-list (module-marks s)))
                      students))
-            :key #'moduleid :test #'equal)
+            :test #'(lambda(a b) (and (equal (moduleid a) (moduleid b)) (equal (year a) (year b)))))
            #'string< :key #'moduleid))
-
 ;          (sort (copy-list
 ;                 (programme-modules
 ;                  (car (programme-records db 'programmeid programmeid))
@@ -1212,6 +1211,7 @@ module"
                      :weight #'(lambda(m) (declare (ignore m)) 1)))
                 m))
            current-marks)))
+
     ;; fill in marks for students and calculate overall average
     (dolist(s students-rows)
       (let ((studentid (studentid (spreadsheet-row-student s))))
