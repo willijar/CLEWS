@@ -26,7 +26,7 @@
     :type publications-table :reader publications :initarg :publications-source
     :documentation "Source of publications"))
   (:default-initargs
-      :id :publications
+   :id :publications
     :authentication (list #'publications-authentication-handler)
     :acl '((:view . (:all))
            (:author . (:staff :fellow :author))
@@ -59,12 +59,13 @@
     (cookie-authentication-handler app request rest params)))
 
 (defmethod initialize-instance :after ((app publications-manager)
-                                       &key &allow-other-keys)
+                                       &key (external-format :latin1) &allow-other-keys)
   (when (and (publication-directory app) (not (slot-boundp app 'publications)))
     (setf (slot-value app 'publications)
           (make-instance
            'publications-file-table
            :acl (acl app)
+           :external-format external-format
            :file (merge-pathnames (publication-directory app) "publications")
            :journals (make-instance
                       'journals-file-table

@@ -586,15 +586,19 @@ of research for the purposes of this assessment."))))
              :documentation "path to file in which data is to be stored")
    (cache :type hash-table :documentation "In memory cache")
    (lock :initform (jarw.port:make-mutex :name "lock for writing")))
+  (:default-initargs :external-format :utf-8)
   (:documentation "More efficient transactions type dictionary for
 publication storage - current values stored in memory, transactions
 written at end of file"))
 
 (defmethod initialize-instance :after((dictionary resident-file-dictionary)
-                                      &key (test #'equal) &allow-other-keys)
+                                      &key (test #'equal)
+                                      (external-format :utf-8)
+                                      &allow-other-keys)
   (let ((cache (make-hash-table :test test)))
     (setf (slot-value dictionary 'cache) cache)
-    (jarw.io:do-file (item (filepath dictionary))
+    (jarw.io:do-file (item (filepath dictionary)
+                           :external-format external-format)()
       ()
     (let ((k (car item))
           (v (cadr item))
@@ -701,3 +705,12 @@ written at end of file"))
         (unless (eql field (car fields)) (write-char #\tab os))
         (princ (tsv-field p field) os))
       (terpri os))))
+
+#| get completed published papers - article and inproceedings |#
+#|(defvar *publications* (publications aston::*publications*))
+(map-dictionary #'(lambda(k p)
+                      (when (eql (getf p :status) :public)
+                        (bibtex-out
+                         (expand-crossref (copy-list p) *publications*))))
+                *publications*)
+|#
