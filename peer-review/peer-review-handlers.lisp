@@ -184,7 +184,7 @@ peer review system and to how it is assessed.")
          (username (username user)))
     (flet ((make-links(idx &key (count (min 12 (1- (length idx))))
                            extra prefix suffix)
-             (when (and count (> count 1))
+             (when (or (not count) (> count 1))
                (mapcan
                 #'(lambda(entry)
                     (nconc
