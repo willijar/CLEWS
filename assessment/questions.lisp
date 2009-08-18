@@ -455,3 +455,83 @@ using the mark-form"))
 (defmethod question-marked-p((question written-q))
   (when (form-mark (init-data (user-record question))
                    `(form ,@(question-mark-markup question))) t))
+
+(defclass compound-q(question)
+  ((text :initarg :question :reader text :initform nil
+          :documentation "Rubric covering all question parts")
+   (parts
+    :initarg :parts :reader parts :initform nil
+    :documentation "List of plists with question parts - part properties
+              are :question :datatype :suffix :default :weighting :feedback")
+   (feedback :initarg :feedback :reader feedback :initform nil
+             :documentation "Feedback covering overall submission"))
+  (:documentation "A question made up of multiple subquestions."))
+
+(defmethod element-markup((element compound-q)
+                          &optional (value (default-value element))
+                          disabled error-msg)
+  (let ((text (text element)))
+    `(div
+      ,@(if (stringp text)  `((p ,text)) text)
+      ,@(when error-msg `(((p :class :error) ,error-msg)))
+      (ol
+       ,@(mapcar
+             #'(lambda(q v)
+                 `(li (p ,(getf q :question))
+                      (p ((input :name ,(name element)
+                                 :align :right
+                                 ,@(when disabled '(:disabled t))
+                                 :datatype ,(getf q :type)
+                                 :size ,(getf q :size 12)
+                                 :value ,v)) ,(getf q :suffix ""))))
+             (parts element) value)))))
+
+(defmethod default-value((element compound-q))
+  (mapcar #'(lambda(q) (getf q :default)) (parts element)))
+
+(defmethod datatype((q compound-q))
+  `(list :type ,(mapcar #'(lambda(q) (getf q :type)) (parts q))))
+
+(defmethod question-mark((question compound-q))
+  (let ((parts (parts question)))
+    (let* ((total
+            (reduce #'+ (mapcar #'(lambda(q) (getf q :weighting 1)) parts))))
+    (if (zerop total)
+        0
+        (/
+         (reduce #'+ (mapcar
+                      #'(lambda(question submitted)
+                          (let ((answer (getf question :answer)))
+
+                          (if (if (and (numberp answer) (not (zerop answer)))
+                                  (< (abs (/ (- answer submitted) answer))
+                                     (getf question :tolerance 1e-2))
+                                  (equalp  answer submitted))
+                              (getf question :weighting)
+                              0)))
+                      parts
+                      (submitted-value (user-record question))))
+         total)))))
+
+(defmethod question-feedback-markup((question compound-q))
+  (let ((feedback (feedback question) )
+        (mark (question-mark question)))
+    `((p (b "Your Answer"))
+       ,(element-markup question
+                        (submitted-value (user-record question)) t)
+      (p (b "Your Mark: " ,mark))
+      (p (b "The correct answers are:"))
+      (ol
+       ,@(mapcar
+            #'(lambda(q)
+                `(li (p ,(getf q :text))
+                     (p ((input :name ,(name question)
+                                :align :right
+                                :disabled t
+                                :datatype ,(getf q :type)
+                                :size ,(getf q :size 12)
+                                :value ,(getf q :answer)))
+                         ,(getf q :suffix ""))
+                        ,(getf q :feedback)))
+            (parts question)))
+      ,@(if (stringp feedback) `((p ,feedback)) feedback) )))

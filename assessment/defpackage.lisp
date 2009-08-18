@@ -49,7 +49,7 @@
    ;; questionnaire specific
    #:assessment #:questionnaire #:weighting
    #:simple-question #:multiple-choice-q #:multiple-answer-q #:numeric-q
-   #:def-dynamic-question #:written-q
+   #:def-dynamic-question #:written-q #:compound-q
    ;;normalisation
    #:assessment-normalisation-weighting #:assessment-normalised-marks
    #:assessment-metadata #:assessment-detail-statistics))
