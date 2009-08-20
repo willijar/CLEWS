@@ -18,7 +18,7 @@
 
 (defpackage :clews.articles
   (:documentation "Article type handling for Clews")
-  (:use :cl)
+  (:use :cl #:docutils #:docutils.parser.rst)
   (:import-from :jarw.io #:read-headers #:write-headers #:*search-path*
                 #:find-file)
   (:import-from :dictionary #:get-dictionary #:dictionary-keys #:rem-dictionary
@@ -38,17 +38,8 @@
   (:import-from :jarw.port  #:make-weak-pointer #:weak-pointer-value
                 #:make-mutex #:with-lock)
   (:import-from :inet.http #:query-values)
-  (:import-from :docutils.parser.rst #:rst-reader #:recursive-rst-reader)
   (:import-from :docutils.writer.html #:html-writer)
   (:import-from :docutils.writer.latex #:latex-writer #:latex-output-stream)
-  (:import-from :docutils
-                #:*unknown-reference-resolvers* #:document
-                #:read-document #:write-part #:title #:abstract
-                #:new-document #:read-lines
-                #:as-text #:with-children #:child #:attribute
-                #:new-document #:read-lines #:settings
-                #:*unknown-reference-resolvers*
-                #:document  #:write-part)
   (:import-from :rfc2822 #:skip-spaces #:token
                 #:quoted-string #:unquoted #:quoted)
   (:import-from :inet.access-control #:access-controlled-entity #:acl
