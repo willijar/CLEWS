@@ -520,7 +520,7 @@ using the mark-form"))
        ,(element-markup question
                         (submitted-value (user-record question)) t)
       (p (b "Your Mark: " ,mark))
-      (p (b "The correct answers are:"))
+      (p (b "Correct Answers are:"))
       (ol
        ,@(mapcar
             #'(lambda(q)
@@ -534,4 +534,5 @@ using the mark-form"))
                          ,(getf q :suffix ""))
                         ,(getf q :feedback)))
             (parts question)))
+      (p (b "Feedback"))
       ,@(if (stringp feedback) `((p ,feedback)) feedback) )))

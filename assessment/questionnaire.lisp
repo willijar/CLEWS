@@ -169,6 +169,7 @@ from an questionnaire, possibly on the basis of knowledge"
 (defmethod initialize-knowledge
     progn (knowledge (questionnaire questionnaire-base))
   "the knowledge record for this questionnaire"
+  (rem-property knowledge :answers)
   (let ((answers (property-subset knowledge :answers)))
     (dolist (spec (allocate-question-specifications knowledge questionnaire))
       (let ((id (first spec)))

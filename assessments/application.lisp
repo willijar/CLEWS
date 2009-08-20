@@ -100,6 +100,8 @@ from the app"
            (mark-handler app request assessment student)))
       ((equal action "marks")
        (marks-summary-handler app request assessment))
+      ((equal action "reset")
+       (assessment-reset-handler app assessment student))
       (t (throw 'response :not-found)))))
 
 (defun home-handler(app request)
@@ -366,7 +368,10 @@ you are doing."))
                    ,@(when (assessment-attempt-p knowledge assessment)
                            (list (list
                                   "attempt"
-                                  (if (started knowledge) "Continue Attempt" "Start"))))
+                                  (if (started knowledge)
+                                      "Continue this Attempt" "Start"))))
+                   ,@(when (assessment-reset-p knowledge assessment)
+                           '(("reset" "Reset and remove your submission")))
                    ("../preferences/" "Preferences")))
          :on-url "feedback")
         ((section :title
@@ -377,6 +382,39 @@ you are doing."))
          ,(assessment-feedback-markup knowledge assessment request)
          (p ((a :href "../") "Back to Assessment Directory")))))
      nil t)))
+
+(defun assessment-reset-handler(app assessmentname student)
+  (let ((assessment (get-assessment assessmentname app))
+        (knowledge (get-knowledge (username student)
+                                  assessmentname app)))
+    (unless (and
+             (has-assessment-permission '(:student :admin :tutor) assessment app)
+             (assessment-reset-p knowledge assessment))
+      (throw 'response :forbidden))
+    (clews.assessment::reinitialize-knowledge knowledge assessment)
+    (setf (get-knowledge (username student) assessmentname app) knowledge)
+    `(html
+       (head (title "Reset Assessment"))
+       (body
+        (navbar  ((("../"  "Home")
+                    ,@(when (assessment-attempt-p knowledge assessment)
+                           (list (list
+                                  "attempt"
+                                  (if (started knowledge) "Continue Attempt" "Start"))))
+                    ,@(when (assessment-feedback-p knowledge assessment)
+                            '(("feedback" "Feedback")))
+                    ("../preferences/" "Preferences")))
+         :on-url "feedback")
+        ((section :title
+                  ,(format nil "Feedback on ~S for ~S"
+                           (display-title assessmentname)
+                           (display-name student)))
+         (p "Your submission to this assessment has now been reset and you may now attempt a fresh instance. Your previous submission cannot now be retreived.")
+         ,(when (assessment-attempt-p knowledge assessment)
+                      `(p ((a :href "attempt")
+                           "Reattempt the reset assessment.")))
+         (p ((a :href "../") "Back to Assessment Directory"))
+)))))
 
 (defun groups-form(app &optional extra-fields)
   (let* ((roles (sort (roles (users app)) #'string<)))
