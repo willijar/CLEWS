@@ -105,6 +105,11 @@ reason why the assessment cannot be accessed."
 (defgeneric assessment-marked-p(knowledge assessment)
   (:documentation "Return true if an assessment has been marked"))
 
+(defun assessment-reset-p(knowledge assessment)
+  (and
+   (eql (clews.assessment::multiple-attempt-p assessment) :resetable)
+   (assessment-feedback-p knowledge assessment)))
+
 (defgeneric assessment-feedback-p-reason(knowledge assessment)
   (:documentation "Return the reason if access is not allowed,
 otherwise nil if access is allowed i.e. they operate in the opposite
@@ -397,10 +402,10 @@ or nil if anytime")
 otherwise submissions will be allowed after the deadline but they will
 not be counted in mark")
    (multiple-attempt :initarg :multiple-attempt
-    :type boolean :initform nil
+    :type symbol :initform nil
     :reader multiple-attempt-p
     :initarg :multiple-attempt
-    :documentation "If true multiple attempts are allowed, even after the feedback is available"))
+    :documentation "If true multiple attempts are allowed, even after the feedback is available. If = :resetable then the option to reset the questionnaire for a student is available."))
   (:documentation "As assessment which has a deadline and feedback
 schedule"))
 

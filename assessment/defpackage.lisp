@@ -35,7 +35,7 @@
    ;; generic assessment API
    #:assessment-attempt-p #:assessment-feedback-p #:assessment-count-p
    #:assessment-attempt-p-reason #:assessment-feedback-p-reason
-   #:assessment-count-p-reason
+   #:assessment-count-p-reason #:assessment-reset-p
    #:assessment-status-long #:assessment-should-not-attempt-reason
    #:assessment-status-short
    #:assessment-attempt-markup #:assessment-feedback-markup
