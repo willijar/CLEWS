@@ -507,7 +507,7 @@ using the mark-form"))
                                   (< (abs (/ (- answer submitted) answer))
                                      (getf question :tolerance 1e-2))
                                   (equalp  answer submitted))
-                              (getf question :weighting)
+                              (getf question :weighting 1)
                               0)))
                       parts
                       (submitted-value (user-record question))))
