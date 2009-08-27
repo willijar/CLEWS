@@ -237,9 +237,11 @@ be considered completed")
              (change-class
               assessment
               'article-questionnaire
-              :article (dictionary:get-dictionary
-                        (docutils.utilities:namespace assessment)
-                        (collection article))))
+              :article (if (docutils.utilities:namespace assessment)
+                           (dictionary:get-dictionary
+                            (docutils.utilities:namespace assessment)
+                            (collection article))
+                           article)))
          (assessments document))
     document))
 
@@ -1074,46 +1076,38 @@ report."
     (read-document article
                    (make-instance 'docutils.parser.rst::recursive-rst-reader))))
 
-
-
-
-
-
 #|
 
 (in-package :clews.articles)
-(defparameter *a* (get-dictionary "digital-transmission" aston::*tutorials*))
+(defparameter *a* (get-dictionary "internet-applications" aston::*tutorials*))
 (defparameter *d* (full-document *a*))
 (defparameter *w* (make-instance
              'latex-writer
              :settings '((:latex-document-class . "article")
                          (:latex-document-options . "10pt,a4paper,twocolumn")
                          (:use-latex-docinfo . t)
+                         (:use-verbatim-when-possible . t)
                          (:latex-stylesheet . "jarw-math.tex"))))
 
-(defparameter *u* (setf inet.acl::*current-user*
-                        (get-dictionary "willijar" aston::*user-source*)))
-
-(setq docutils.assessment::*articles* aston::*tutorials*)
+(setf inet.acl::*current-user* (get-dictionary "willijar" aston::*user-source*))
 (updated-goals docutils.assessment::*articles* *current-user*)
-
-(defparameter (docutils.assessment::*user-data*
-               (user-state article *u*))
 
 (with-open-file(os #p"/home/willijar/dev/lisp/src/docutils/tests/tmp.tex" :direction :output :if-does-not-exist :create :if-exists :supersede) (docutils:write-document *w* *d* os))
 
 
 To Fix:
 
+http://localhost:8080/tutorials/
 
-clean oven and hobb
+* generate errors for citation and footnote references that are unresolved
+
+* cross input figure references need fixed
 
 * article-questionnaire specialise rendering.
 
-* redraw msk-transmitter
+* tables - colwidth rules - where to put caption etc
 
-* Tables - line and hlines?
+* make questionnaire descriptions formatted.
 
-* small non-breaking spaces for units and other non-breaking spaces??
 
 |#

@@ -16,11 +16,11 @@
 ;;; which willuse locks to protect against reentrance
 (in-package :clews.articles)
 
-(defclass article-rst-reader(docutils.parser.rst::rst-reader)
+(defclass article-rst-reader(docutils.parser.rst:rst-reader)
   ()
   (:documentation "Specialisation parser for articles"))
 
-(defmethod docutils:transforms((reader article-rst-reader))
+(defmethod transforms((reader article-rst-reader))
   (nconc (list 'docutils.transform:fignum)
          (call-next-method)))
 
@@ -33,29 +33,27 @@
   ()
   (:documentation "Article specific writer does not output errors"))
 
-(defmethod docutils.writer.html::visit-node((writer article-html-writer)
-                                            (node docutils.nodes:section))
+(defmethod visit-node((writer article-html-writer)
+                      (node docutils.nodes:section))
   (when (or (errors writer)
             (not (equalp "Docutils System Messages" (docutils::title node))))
     (call-next-method)))
 
-(defmethod docutils.writer.html::visit-node
-    ((writer article-html-writer)
-     (node docutils.nodes:system-message))
+(defmethod visit-node  ((writer article-html-writer)
+                        (node docutils.nodes:system-message))
   (if  (errors writer)
        (call-next-method)
-       (docutils:part-append
+       (part-append
         "
 <p class=\"error\">System Message.
 You need editorial access to view the details</p>
 ")))
 
-(defmethod docutils.writer.html::visit-node
-    ((writer article-html-writer)
-     (node docutils.nodes:problematic))
+(defmethod visit-node ((writer article-html-writer)
+                       (node docutils.nodes:problematic))
   (if  (errors writer)
        (call-next-method)
-       (docutils:part-append
+       (part-append
         "
 <span class=\"error\">Problematic.
 You need editorial access to view the details</p>
@@ -93,7 +91,7 @@ list of part names, write these sections to the streams")
                    :show-errors (has-permission :edit article))))
 
 
-(defclass evaluation(docutils.nodes:node)
+(defclass evaluation(node)
   ((language :type symbol :initform :lisp :initarg :language :reader language)
    (output-format :type symbol :initform :markup
                   :initarg  :output-format :reader output-format)
@@ -107,37 +105,38 @@ list of part names, write these sections to the streams")
             (package symbol :markup)
             &content content)
   (let ((language (intern (string-upcase language) :keyword))
-        (content (with-output-to-string(os)
-                   (loop :for line :across content
-                      :do (write-line line os))))
         (*package* (or (find-package package) (find-package :markup))))
   (if content
-      (add-child
-       parent
-       (make-instance
-        'evaluation
-        :language language
-        :output-format output
-        :content (ecase language
-                   (:lisp (read-from-string content)))))
+      (let ((content
+             (with-output-to-string(os)
+               (loop :for line :across content
+                  :do (write-line line os)))))
+        (add-child
+         parent
+         (make-instance
+          'evaluation
+          :language language
+          :output-format output
+          :content (ecase language
+                     (:lisp (read-from-string content))))))
       (report :error "Evaluation directive is empty; content required."))))
-
 
 (defmethod evaluation((node evaluation))
   "If we have cached an evaluation use it otherwise return an evaluation
 without caching."
   (if (slot-boundp node 'evaluation)
       (slot-value node 'evaluation)
-      (ecase (language node)
-        (:lisp (eval (content node))))))
+      (ignore-errors
+        (ecase (language node)
+          (:lisp (eval (content node)))))))
 
-(defmethod docutils.transform:evaluate((node evaluation))
+(defmethod evaluate((node evaluation))
   "Reevaluate and Cache node"
   (setf (slot-value node 'evaluation) (evaluation node)))
 
 (defmethod copy-of-node((node evaluation))
   (let ((copy (call-next-method)))
-    (dolist(slot '(language output content))
+    (dolist(slot '(language output-format content))
       (when (slot-boundp node slot)
         (setf (slot-value copy slot) (slot-value node slot))))
     copy))
@@ -146,17 +145,17 @@ without caching."
     ((writer docutils.writer.latex::latex-writer)
      (node evaluation))
   (let ((evaluation (evaluation node)))
-    (case (output-format node)
-      (:markup (docutils:part-append
-                (with-output-to-string(os)
-                  (markup:latex os evaluation))))
-      (:latex (docutils:part-append evaluation)))))
+      (case (output-format node)
+        (:markup (part-append
+                  (with-output-to-string(os)
+                    (markup:latex os evaluation))))
+        (:latex (part-append evaluation)))))
 
 (defmethod visit-node((writer docutils.writer.html:html-writer)
                       (node evaluation))
   (let ((evaluation (evaluation node)))
-    (case (output-format node)
-      (:markup (docutils:part-append
-                (with-output-to-string(os)
-                  (markup:html os evaluation))))
-      (:html (docutils:part-append evaluation)))))
+      (case (output-format node)
+        (:markup (part-append
+                  (with-output-to-string(os)
+                    (markup:html os evaluation))))
+        (:html (part-append evaluation)))))

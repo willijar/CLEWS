@@ -18,7 +18,7 @@
 
 (defpackage :clews.articles
   (:documentation "Article type handling for Clews")
-  (:use :cl #:docutils #:docutils.parser.rst)
+  (:use :cl)
   (:import-from :jarw.io #:read-headers #:write-headers #:*search-path*
                 #:find-file)
   (:import-from :dictionary #:get-dictionary #:dictionary-keys #:rem-dictionary
@@ -38,8 +38,15 @@
   (:import-from :jarw.port  #:make-weak-pointer #:weak-pointer-value
                 #:make-mutex #:with-lock)
   (:import-from :inet.http #:query-values)
+  (:import-from :docutils #:add-child #:report #:document #:read-document
+                #:read-lines #:visit-node #:copy-of-node #:transforms #:node
+                #:part-append #:new-document #:*unknown-reference-resolvers*
+                #:settings)
+  (:import-from :docutils.parser.rst  #:rst-reader #:recursive-rst-reader
+                #:def-directive #:&option #:&content)
   (:import-from :docutils.writer.html #:html-writer)
   (:import-from :docutils.writer.latex #:latex-writer #:latex-output-stream)
+  (:import-from :docutils.transform #:evaluate)
   (:import-from :rfc2822 #:skip-spaces #:token
                 #:quoted-string #:unquoted #:quoted)
   (:import-from :inet.access-control #:access-controlled-entity #:acl
@@ -49,7 +56,6 @@
                 #:application #:published-methods #:users
                 #:user-preference #:response-handler
                 #:user-component-preferences #:user-component-properties)
-  (:import-from :docutils )
   (:import-from :clews.form #:markup-form #:form-data)
   (:import-from :clews.assessment #:assessment-stub #:deadline-date
                 #:feedback-date #:default-deadline-date
