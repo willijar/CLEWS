@@ -128,7 +128,7 @@ socratic assessment"
 		       :randomise-questions nil)))
 
 (defgeneric stage-deadline(stage knowledge assessment)
-  (:method deadline(stage knowledge (instance socratic))
+  (:method (stage knowledge (instance socratic))
            (or (property (property-subset knowledge stage) :deadline-date)
                (getf (slot-value instance 'deadlines) stage))))
 

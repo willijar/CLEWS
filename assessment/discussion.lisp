@@ -17,7 +17,7 @@
 		 #:*message-header-specifications*)
    (:import-from :inet.acl #:*current-user* #:username)
    (:import-from :clews.form #:markup-form #:form-data #:name #:form-mark
-		#:is-form-element-p #:output-value #:input-validation
+		#:is-form-element-p #:format-output #:input-validation
 		#:invalid-input
 		#:default-value #:element-markup #:datatype #:form-values
 		#:submitted-action))
@@ -139,7 +139,7 @@ values it will be modified, otherwise an new article will be returned"
 			    ((td :valign :top :align :left :headers ,name)
 			     ,(let ((type `(header-field :name ,h)))
 				(if v
-				    (output-value type v)
+				    (format-output type v)
 				    `((input :name ,h :size ,cols
 					     :datatype ,type)))))))))
 	       headers)
