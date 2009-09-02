@@ -19,6 +19,9 @@
 
 ;;; external interface
 
+(defvar *document-error-hook*  nil
+  "When *document-error-hook* is non-nil it is called prior to normal handlking of document errors")
+
 (defgeneric id(article)
   (:documentation "Return a unique id for this article in its collection"))
 
@@ -356,7 +359,9 @@ article"))
 (defmethod read-document :around ((article article) (reader rst-reader))
   "Update errors and targets from a newly read document"
   (handler-bind ;; ALL errors here are terminal and are reported in document
-      ((error #'(lambda(e) (docutils::report :terminal (format nil "~S" e)))))
+      ((error #'(lambda(e)
+                  (when *document-error-hook* (funcall *document-error-hook* e))
+                  (docutils::report :terminal (format nil "~S" e)))))
     (let ((document (call-next-method)))
       ;; update nameids after reading document
       ;; thus read-document can be called without #'resolve-article-reference

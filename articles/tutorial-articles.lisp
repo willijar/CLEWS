@@ -869,29 +869,32 @@ possible new ones"
     (update-relationships article)))
 
 (defmethod errors((assessment article-questionnaire))
-  (if (slot-boundp assessment 'errors)
-      (slot-value assessment 'errors)
-      (let ((*current-user* nil)
-            (knowledge (list nil))) ;; dummy knowledge and no user
-        (setf (slot-value assessment 'errors)
-              (handler-case
-                  (progn
-                    (clews.assessment::assessment-status-table
-                     knowledge assessment)
-                    (clews.assessment:assessment-attempt-markup
-                     knowledge assessment nil)
-                    (clews.assessment:assessment-feedback-markup
-                     knowledge assessment nil)
-                    nil)
-                (error(e)
-                  (list (make-instance
-                         'document-error
-                         :collection (collection (article assessment))
-                         :id (id (article assessment))
-                         :message (format
-                                   nil "Assessment:~%  ~S~%~A"
-                                   (docutils.assessment::name assessment)
-                                   e)))))))))
+  (unless (slot-boundp assessment 'errors)
+    (let ((*current-user* nil)
+          (knowledge (list nil))) ;; dummy knowledge and no user
+      (setf (slot-value assessment 'errors) nil)
+      (handler-bind
+          ((error
+            #'(lambda(e)
+                (when *document-error-hook* (funcall *document-error-hook* e))
+                (push
+                 (make-instance
+                  'document-error
+                  :collection (collection (article assessment))
+                  :id (id (article assessment))
+                  :message (format
+                            nil "Assessment:~%  ~S~%~A"
+                            (docutils.assessment::name assessment)
+                            e))
+                 (slot-value assessment 'errors)))))
+        (progn
+          (clews.assessment::assessment-status-table
+           knowledge assessment)
+          (clews.assessment:assessment-attempt-markup
+           knowledge assessment nil)
+          (clews.assessment:assessment-feedback-markup
+           knowledge assessment nil)))))
+  (slot-value assessment 'errors))
 
 (defmethod (setf document) :after (document (article tutorial-article))
   (let ((errors (mapcan #'errors (assessments article))))
