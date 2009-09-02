@@ -89,32 +89,38 @@ construct the question"))
        (labels ((varname(arg) (car arg))
                 (fieldname(arg) (intern (string (varname arg)) :keyword))
                 (value(arg) (second arg)))
+         (eval `(progn
+                  ,@(mapcar #'(lambda(name) `(defvar ,(varname name))) vars)))
          (let ((g-param (gensym))
                (g-user-data (gensym)))
-           `(lambda(,g-user-data)
-              (let ((,g-param (rest ,g-user-data)))
-                (let* ,(mapcar
-                        #'(lambda(arg)
-                            `(,(varname arg)
-                               ;; varnames starting with _ are not stored in
-                               ;; user data
-                               ,(if (eql (char (string (varname arg)) 0) #\_)
-                                    (value arg)
-                                    `(or (getf ,g-param ,(fieldname arg))
-                                        (setf (getf ,g-param ,(fieldname arg))
-                                              ,(value arg))) )))
-                        vars)
-                  (declare (special ,@(mapcar #'varname vars)))
-                  (setf (rest ,g-user-data) ,g-param)
-                  (list
-                   ',question-type
-                   :name ,name
-                   ,@(loop :for a :on initargs :by #'cddr
-                        :nconc (list (car a)
-                                     (if (typep (cadr a) 'node)
-                                         `(copy-eval ,(cadr a))
-                                         `(eval ',(cadr a))))))))))))))
-  (slot-value spec 'factory))
+           `(progn
+              ,@(mapcar #'(lambda(name) `(defvar ,(varname name))) vars)
+              (lambda(,g-user-data)
+                (let ((,g-param (rest ,g-user-data)))
+                  (let* ,(mapcar
+                          #'(lambda(arg)
+                              `(,(varname arg)
+                                 ;; varnames starting with _ are not stored in
+                                 ;; user data
+                                 ,(if (eql (char (string (varname arg)) 0) #\_)
+                                      (value arg)
+                                      `(or (getf ,g-param ,(fieldname arg))
+                                           (setf (getf ,g-param ,(fieldname arg))
+                                                 ,(value arg))) )))
+                          vars)
+
+                    (declare (special ,@(mapcar #'varname vars)))
+
+                    (setf (rest ,g-user-data) ,g-param)
+                    (list
+                     ',question-type
+                     :name ,name
+                     ,@(loop :for a :on initargs :by #'cddr
+                          :nconc (list (car a)
+                                       (if (typep (cadr a) 'node)
+                                           `(copy-eval ,(cadr a))
+                                           `(eval ',(cadr a)))))))))))))))
+    (slot-value spec 'factory))
 
 (defmethod allowed-child-p((q questionnaire) child &optional index)
   ;; questionnaire can have nodes as per itsd base class then a set of
@@ -127,11 +133,10 @@ construct the question"))
                            'question-specification)))
            (call-next-method))))
 
-
 (defmethod make-question(id (spec question-specification)
                          &optional (user-record
                                     (clews.assessment::make-user-record)))
-  (make-question id (eval (factory spec))  user-record))
+    (make-question id (eval (factory spec))  user-record))
 
 (defvar *questionnaire-directives*
   (make-instance 'dictionary:shadow-dictionary
@@ -333,44 +338,47 @@ construct the question"))
                  (write-to-string e :escape nil :readably nil )))))
 
 (defmethod docutils.transform:evaluate((node question-input))
-  (handler-case
-      (loop
-         :for a :on (slot-value node 'docutils::expr) :by #'cddr
-         :do
-         (setf (getf (slot-value node 'docutils::result) (first a))
-               (eval (second a))))
-    (error(e)
-      (docutils:report
-       :warn (write-to-string e :escape nil :readably nil ) ))))
+  (unless (slot-boundp node 'docutils::result)
+    (setf (slot-value node 'docutils::result) nil)
+    (handler-case
+        (loop
+           :for a :on (slot-value node 'docutils::expr) :by #'cddr
+           :do
+           (setf (getf (slot-value node 'docutils::result) (first a))
+                 (eval (second a))))
+      (error(e)
+        (docutils:report
+         :warn (write-to-string e :escape nil :readably nil ) ))))
+  (slot-value node 'docutils::result))
 
 
 (defmethod clews.assessment::parts((q compound-q))
-  (mapcar #'(lambda(node) (slot-value node 'docutils::result))
-          (docutils:collate-nodes(node (text q))
-                                 (typep node 'question-input))))
+  (mapcar
+   #'docutils.transform:evaluate
+   (docutils:collate-nodes(node (text q)) (typep node 'question-input))))
 
 (defmethod visit-node((writer docutils.writer.html:html-writer)
                       (node question-input))
-  (unless (slot-boundp node 'docutils::result)
-    (docutils.transform::evaluate node))
-  (part-append
-   (markup:html
+  (let ((result (docutils.transform::evaluate node)))
+    (part-append
+     (markup:html
       nil
-      `((markup:input ,@(slot-value node 'docutils::result))))))
+      `((markup:input :name ,(getf result :name)
+                      :value ,(getf result :value)))))))
 
-(defmethod docutils.writer.latex::visit-node
-    ((writer docutils.writer.latex::latex-writer)
-     (node question-input))
-  (unless (slot-boundp node 'docutils::result)
-    (docutils.transform::evaluate node))
-  (part-append
-   (markup:latex
+(defmethod visit-node ((writer docutils.writer.latex::latex-writer)
+                       (node question-input))
+  (let ((result (docutils.transform::evaluate node)))
+    (part-append
+     (markup:latex
       nil
-      `((markup:input ,@(slot-value node 'docutils::result))))))
+      `((markup:input :name ,(getf result :name)
+                      :value ,(getf result :value)))))))
 
 (defmethod element-markup((element compound-q)
                           &optional (value (default-value element))
                           disabled error-msg)
+  (setq *tmp* element)
   (map 'nil
        #'(lambda(part value)
            (with-slots((result docutils::result)) part
@@ -384,14 +392,15 @@ construct the question"))
     ,@(when error-msg `(((p :class :error) ,error-msg)))
     ,(text element)))
 
-(defmethod  clews.assessment::question-feedback-markup((question compound-q))
+(defmethod question-feedback-markup((question compound-q))
   `((p (b "Your Answer"))
     ,(element-markup question
                      (submitted-value (user-record question)) t)
     (p (b "Your Mark: " ,(question-mark question)))
     (p (b "Correct Answer"))
     ,(element-markup question
-                     (mapcar #'(lambda(p) (getf p :answer)) (parts question))
+                     (mapcar #'(lambda(p) (getf p :answer))
+                             (clews.assessment::parts question))
                      t)
     (p (b "Feedback"))
     ,(feedback question)))
@@ -515,7 +524,7 @@ or continue this assessment if you are sure you know what you are doing. "))
       (let ((parent (parent node)))
         (when parent (source parent)))))
 
-(defmethod docutils.writer.latex::visit-node
+(defmethod visit-node
     ((writer docutils.writer.latex::latex-writer)
      (assessment questionnaire))
   (let ((render (setting :latex-assessment-render (document assessment))))

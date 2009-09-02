@@ -91,7 +91,7 @@ list of part names, write these sections to the streams")
                    :show-errors (has-permission :edit article))))
 
 
-(defclass evaluation(node)
+(defclass evaluation(docutils.nodes:element)
   ((language :type symbol :initform :lisp :initarg :language :reader language)
    (output-format :type symbol :initform :markup
                   :initarg  :output-format :reader output-format)
