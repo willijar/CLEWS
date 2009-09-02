@@ -29,78 +29,45 @@ given a groupname")
     ("admin" ,#'admin-handler :stage :response :match :exact :role :admin)
     #+nil("group" ,#'group-handler :stage :response :match :exact :role :admin)))
 
-(defun reset-password(username authenticators &key (if-set :ask))
+(defun reset-password(username authenticators &key (if-set :ask)
+                      (new-password (crypt::random-salt 8))
+                      (notify
+"You have a new password for accessing the web services on
+
+http://heisenberg.aston.ac.uk:8080/
+
+Username: ~S
+New Password: ~S
+
+To change this password go to http://heisenberg.aston.ac.uk:8080/pwd/
+
+Do NOT use your main university Unix password for general web site access."))
   (let* ((set-p
           (every #'(lambda(a) (stored-credentials username a)) authenticators))
-         (random (crypt::random-salt 8))
          (new (if set-p
                   (ecase if-set
-                    (:reset random)
+                    (:reset new-password)
                     (:ignore nil)
                     (:ask
                      (when
-                     (y-or-n-p
+                         (y-or-n-p
                       "~%Password for ~S already set.~% Do you want to reset it"
                       username))))
-                       random)))
+                  new-password)))
     (format t "set-p= ~A New=~A~%" set-p new)
     (when new
       (map 'null #'(lambda(authenticator)
                      (change-credentials new username authenticator))
            authenticators)
       (format t "Updated authentication for ~S" username)
-      (inet.rfc2821::send-mail
-   "J.A.R.Williams@aston.ac.uk" username
-   (format nil "New  Intranet Password for heisenberg.aston.ac.uk:8080")
-   (format nil "
-You have a new intranet password for accessing
-
-Masters assessments  : http://heisenberg.aston.ac.uk:8080/MSc/grades/
-Masters projects     : http://heisenberg.aston.ac.uk:8080/MSc/projects/
-Research Publications: http://heisenberg.aston.ac.uk:8080/publications/
-
-Username: ~S
-New Password: ~S
-
-To change this password go to http://heisenberg.aston.ac.uk:8080/pwd/
-
-To access other EE intranet materials self register at
-http://www.ee.aston.ac.uk/intranet/
-After manual checking you will be then be given appropriate access.
-
-Do NOT use your main university Unix password for general web site access."
-           username new))
-      (format t "Emailed authentication to ~S" username))))
-
-
-
-(defun update-credentials(passwd username app request)
-  (map 'null #'(lambda(authenticator)
-                 (change-credentials passwd username authenticator))
-       (authenticators app))
-  (inet.rfc2821::send-mail
-   (admin app) username
-   (format nil "New ~A Intranet Password" (realm app))
-   (format nil "~A~%
-
-You have a new intranet password for accessing
-
-Masters assessments  : http://heisenberg.aston.ac.uk:8080/MSc/grades/
-Masters projects     : http://heisenberg.aston.ac.uk:8080/MSc/projects/
-Research Publications: http://heisenberg.aston.ac.uk:8080/publications/
-
-Username: ~S
-New Password: ~S
-
-To change this password go to http://heisenberg.aston.ac.uk:8080/pwd/
-
-To access other EE intranet materials self register at
-http://www.ee.aston.ac.uk/intranet/
-After manual checking you will be then be given appropriate access.
-
-Do NOT use your main university Unix password for general web site access."
-           (realm app) username passwd))
-  (format t "Emailed authentication to ~S" username))
+      (typecase notify
+        (string
+         (inet.rfc2821::send-mail
+          "J.A.R.Williams@aston.ac.uk" username
+          "New  Intranet Password for heisenberg.aston.ac.uk:8080"
+          (format nil notify  username new))
+         (format t "Emailed authentication to ~S" username))
+        (function (funcall notify username new))))))
 
 (defmethod password-check(p1 &optional p2)
   "Returns a descriptive string if password not OK, null if it is OK"
@@ -129,7 +96,8 @@ Do NOT use your main university Unix password for general web site access."
             ,@(when (and (submitted-action form request)
                          (not condition)
                          form-data)
-                    (update-credentials (crypt::random-salt 8) username app request)
+                    (reset-password
+                     username (authenticators app) :if-set :reset)
                     `((p ,(format nil "Randomly generated
 password has been sent to email address ~S." username))))
             ,(markup-form form (when username request)))))))))
@@ -162,8 +130,10 @@ password has been sent to email address ~S." username))))
                       `(((p :class :error) ,err)
                         ,(markup-form form form-data))
                       (progn
-                        (update-credentials p1 (username *current-user*)
-                                            app request)
+                        (reset-password
+                         (username *current-user*) (authenticators app)
+                         :if-set :reset
+                         :new-password p1)
                         `((p ,(format nil "Password for ~S successfully set."
                                       (username *current-user*)))))))
                 (list (markup-form form)))))))))
