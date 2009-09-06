@@ -104,13 +104,12 @@ construct the question"))
                                  ;; user data
                                  ,(if (eql (char (string (varname arg)) 0) #\_)
                                       (value arg)
-                                      `(or (getf ,g-param ,(fieldname arg))
-                                           (setf (getf ,g-param ,(fieldname arg))
-                                                 ,(value arg))) )))
+                                      `(or
+                                        (getf ,g-param ,(fieldname arg))
+                                        (setf (getf ,g-param ,(fieldname arg))
+                                              ,(value arg))) )))
                           vars)
-
                     (declare (special ,@(mapcar #'varname vars)))
-
                     (setf (rest ,g-user-data) ,g-param)
                     (list
                      ',question-type
@@ -324,13 +323,12 @@ construct the question"))
   (handler-case
       (make-instance
        'question-input
-       :expr (let ((len (length text))
-                   (res nil)
+       :expr (let ((res nil)
                    (p 0))
                (loop
                   (multiple-value-bind(s np)
-                      (read-from-string text nil nil :start p)
-                    (when(>= np len) (return (nreverse res)))
+                      (read-from-string text nil '_end :start p)
+                    (when(eql s '_end) (return (nreverse res)))
                     (setf p np)
                     (push s res)))))
     (error(e)
