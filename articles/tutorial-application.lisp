@@ -222,7 +222,9 @@ clockTick();
                   ,(countdown-html (/ time-remaining 60)))))
          ,@(flet ((action-link(action text)
                   `(markup:p ((markup::a
-                     :href , (format nil "?name=~A&action=~A" name action))
+                     :href , (format nil "?name=~A&action=~A"
+                                     (inet.uri:uri-escape (string name))
+                                     action))
                        ,text))))
                 (case action
                   (:ATTEMPT
