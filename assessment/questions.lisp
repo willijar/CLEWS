@@ -487,7 +487,8 @@ using the mark-form"))
              (parts element) value)))))
 
 (defmethod default-value((element compound-q))
-  (mapcar #'(lambda(q) (getf q :default)) (parts element)))
+  (or (first (user-record element))
+      (mapcar #'(lambda(q) (getf q :default)) (parts element))))
 
 (defmethod datatype((q compound-q))
   `(list :type ,(mapcar #'(lambda(q) (getf q :type)) (parts q))))
