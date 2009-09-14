@@ -89,8 +89,6 @@ construct the question"))
        (labels ((varname(arg) (car arg))
                 (fieldname(arg) (intern (string (varname arg)) :keyword))
                 (value(arg) (second arg)))
-         (eval `(progn
-                  ,@(mapcar #'(lambda(name) `(defvar ,(varname name))) vars)))
          (let ((g-param (gensym))
                (g-user-data (gensym)))
            `(progn
@@ -114,6 +112,7 @@ construct the question"))
                     (list
                      ',question-type
                      :name ,name
+                     :user-record ,g-user-data
                      ,@(loop :for a :on initargs :by #'cddr
                           :nconc (list (car a)
                                        (if (typep (cadr a) 'node)
@@ -247,7 +246,8 @@ construct the question"))
              (if (and (= 1 (number-children value))
                       (typep (child value 0) 'docutils.nodes:paragraph))
                  (setf (getf results argname)
-                       (read-from-string (as-text value)))
+                       (let ((*package* (find-package :markup)))
+                         (read-from-string (as-text value))))
                  (docutils:report :error `("Question option ~A
  may contain a single paragraph only." ,argname)))))
           (t (report
@@ -310,8 +310,7 @@ construct the question"))
           (list "None of them")))
     ,(slot-value question 'clews.assessment::feedback)))
 
-
-(defclass compound-q(rst-question clews.assessment:compound-q)
+(defclass compound-q(clews.assessment:compound-q rst-question)
   ()
   (:documentation "An RST multiple choice question"))
 
@@ -362,6 +361,8 @@ construct the question"))
      (markup:html
       nil
       `((markup:input :name ,(getf result :name)
+                      :datatype ,(getf result :type)
+                      ,@(when (getf result :disabled) `(:disabled t))
                       :value ,(getf result :value)))))))
 
 (defmethod visit-node ((writer docutils.writer.latex::latex-writer)
@@ -371,24 +372,29 @@ construct the question"))
      (markup:latex
       nil
       `((markup:input :name ,(getf result :name)
+                      :datatype ,(getf result :type)
+                      ,@(when (getf result :disabled) `(:disabled t))
                       :value ,(getf result :value)))))))
 
 (defmethod element-markup((element compound-q)
                           &optional (value (default-value element))
                           disabled error-msg)
   (setq *tmp* element)
+  (let ((text  (copy-of-node (text element))))
+    (setf (slot-value text 'docutils:parent)
+          (slot-value (text element) 'docutils:parent))
   (map 'nil
        #'(lambda(part value)
            (with-slots((result docutils::result)) part
                (setf (getf result :name) (name element))
                (setf (getf result :value) value)
                (when disabled (setf (getf result :disabled) t))))
-       (docutils:collate-nodes(node (text element))
+       (docutils:collate-nodes(node text)
                               (typep node 'question-input))
        value)
   `(div
     ,@(when error-msg `(((p :class :error) ,error-msg)))
-    ,(text element)))
+    ,text)))
 
 (defmethod question-feedback-markup((question compound-q))
   `((p (b "Your Answer"))
@@ -406,7 +412,7 @@ construct the question"))
 
 (let ((*directives* docutils.assessment::*questionnaire-directives*))
   (def-directive numeric (parent id
-                                   &option (params (read :multiplep t))
+                                   &option (params (read :multiplep t :package :markup))
                                    &content-parser parser)
     (decode-question-args
      parent parser
@@ -418,7 +424,7 @@ construct the question"))
 
   (def-directive multiple-choice
       (parent id
-              &option (params (read :multiplep t))
+              &option (params (read :multiplep t :package :markup))
               &content-parser parser)
     (decode-question-args
      parent parser
@@ -434,7 +440,7 @@ construct the question"))
 
   (def-directive multiple-answer
       (parent id
-              &option (params (read :multiplep t))
+              &option (params (read :multiplep t :package :markup))
               &content-parser parser)
     (decode-question-args
      parent parser
@@ -450,7 +456,7 @@ construct the question"))
 
   (def-directive compound-q
       (parent id
-              &option (params (read :multiplep t))
+              &option (params (read :multiplep t :package :markup))
               &content-parser parser)
     (decode-question-args
      parent parser
