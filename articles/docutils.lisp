@@ -126,17 +126,22 @@ list of part names, write these sections to the streams")
 without caching."
   (if (slot-boundp node 'evaluation)
       (slot-value node 'evaluation)
-      (ignore-errors
-        (ecase (language node)
-          (:lisp (eval (content node)))))))
+      (ecase (language node)
+        (:lisp (eval (content node))))))
 
 (defmethod evaluate((node evaluation))
   "Reevaluate and Cache node"
-  (setf (slot-value node 'evaluation) (evaluation node)))
+  (handler-bind
+       ((error
+         #'(lambda(e)
+             (when *document-error-hook*
+               (funcall *document-error-hook* e))
+             (docutils::report :terminal (format nil "~S" e)))))
+    (setf (slot-value node 'evaluation) (evaluation node))))
 
 (defmethod copy-of-node((node evaluation))
   (let ((copy (call-next-method)))
-    (dolist(slot '(language output-format content))
+    (dolist(slot '(language output-format content evaluation))
       (when (slot-boundp node slot)
         (setf (slot-value copy slot) (slot-value node slot))))
     copy))
