@@ -271,6 +271,8 @@ assessment if not already initialized. Knowledge record is
 (defgeneric reinitialize-knowledge (knowledge assessment)
   (:method(knowledge assessment)
     (rem-property knowledge :initialized)
+    (rem-property knowledge :started)
+    (rem-property knowledge :completed)
     (initialize-knowledge knowledge assessment)))
 
 (defgeneric assessment-normalisation-weighting(normalisation-set
