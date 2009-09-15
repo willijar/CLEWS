@@ -209,6 +209,8 @@ clockTick();
                knowledge assessment))
              (feedback-p
               (clews.assessment:assessment-feedback-p knowledge assessment))
+             (reset-p
+              (clews.assessment:assessment-reset-p knowledge assessment))
              (action (intern (string-upcase action-q) :keyword)))
         (setf (char action-q 0) (char-upcase (char action-q 0)))
       `(((markup:section :class "assessment"
@@ -246,15 +248,31 @@ clockTick();
                             name
                             (user-state article *current-user*))
                            knowledge)))
+                  (:RESET
+                   (unless reset-p (throw 'inet.http:response :forbidden))
+                   (clews.assessment::reinitialize-knowledge knowledge assessment)
+                   (setf (state-value name (user-state article *current-user*))
+                         knowledge)
+                   `((p "Your submission to this assessment has now
+                     been reset and you may now attempt a fresh
+                     instance. Your previous submission cannot now be
+                     retreived.")
+                     ,(when (clews.assessment:assessment-attempt-p
+                     knowledge assessment)
+                            (action-link "attempt" "Continue attempt"))
+                     ((a :href "./view")
+                       ,(format nil "Back to ~S" (title article)))))
                   (:FEEDBACK
                    (list
                     (clews.assessment:assessment-feedback-markup
                      knowledge assessment request)
-                    (when (clews.assessment:assessment-attempt-p
-                           knowledge assessment)
+                    (unless not-attempt-reason
                       (action-link "attempt" "Continue attempt"))
                     `((a :href "./view")
-                      ,(format nil "Back to ~S" (title article)))))
+                      ,(format nil "Back to ~S" (title article)))
+                    (when reset-p
+                      (action-link "reset" "Reset your submission for
+                      a new attempt"))))
                   ((throw 'inet.http:response :not-found))))))))))
 
 (defmethod sections((article tutorial-article))
