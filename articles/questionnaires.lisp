@@ -487,35 +487,11 @@ construct the question"))
       nil
       `((markup:section :class "assessment-status"
          :title ,(format nil "Assessment ~S"  (string (name assessment))))
-        ,(assessment-status-table knowledge assessment)
-        ,(multiple-value-bind(attempt-p reason)
-            (assessment-attempt-p knowledge assessment)
-            (if attempt-p
-               `(p
-                 ,@(jarw.lib:when-bind(reason
-                                       (assessment-should-not-attempt-reason
-                                        knowledge assessment))
-                     (list reason " Only click the link to start
-or continue this assessment if you are sure you know what you are doing. "))
-                 ,@(when (timelimit knowledge assessment)
-                        `("The assessment has a time limit. "
-                          ,(when (started knowledge)
-                                 (let ((remaining (clews.assessment:time-remaining
-                                                   knowledge assessment)))
-                                   (if (<= remaining 0)
-                                       "If you continue this assessment you will be exceeding the time limit."
-                                       (format nil "You have only ~D seconds left to complete this assessment." remaining))))))
-                 ((a :href  ,(format nil "~A?name=~A&action=attempt"
-                                     *assessment-base-url*
-                                     (inet.uri:uri-escape (string (name assessment)))))
-                  ,(if (started knowledge) "Continue" "Start")
-                  " this assessment."))
-               `(p ,reason)))
-        ,(when (assessment-feedback-p knowledge assessment)
-               `(p ((a :href ,(format nil "~A?name=~A&action=feedback"
-                                      *assessment-base-url*
-                                      (inet.uri:uri-escape (string (name assessment)))))
-                    "Feedback on your answers"))))))))
+        ,@(clews.assessment::assessment-student-status
+           knowledge assessment
+           (format nil "~A?name=~A&action="
+                *assessment-base-url*
+                (inet.uri:uri-escape (string (name assessment))))))))))
 
 (register-settings-spec
  `((:latex-assessment-render
