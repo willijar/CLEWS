@@ -89,28 +89,39 @@
     ,@(mapcar
        #'(lambda(item)
            (when (cdr item)
-             `(tr ((th :align "right") ,(car item))
-               (td ,(cdr item)))))
+             `(tr ((th :align :right) ,(car item))
+               ((td :align :left) ,(cdr item)))))
        (assessment-status-long knowledge assessment))))
 
-(defun assessment-student-status(knowledge assessment &optional (path ""))
+(defun assessment-student-status (knowledge assessment  &optional (path ""))
+  (let ((url (etypecase  path
+               (function  path)
+               (string #'(lambda(action) (strcat path (string action)))))))
   "List of markup describing the  this assessment"
   `(,(assessment-status-table knowledge assessment)
     (table
-     ,(when (assessment-attempt-p knowledge assessment)
-            `(tr (td ((a :href ,(strcat path "assessment")) "Start assessment."))
-              (td ,@(when-bind (reason (assessment-should-not-attempt-reason
-                                        knowledge assessment))
-                               (list reason "Only click the link to start
+     ,(multiple-value-bind(attempt-p reason)
+             (assessment-attempt-p knowledge assessment)
+         (when attempt-p
+           `(tr (td ((a :href ,(funcall url "attempt")) "Start assessment."))
+                (td ,@(when reason (list reason " Only click the link to start
 this assessment if you are sure you know what you are doing. "))
-               ,(when (and (timelimit knowledge assessment)
-                           (not (completed knowledge)))
-                      "The assessment has a timelimit so do not
-start it until your you are ready to complete it in the given
-time."))))
+                    ,@(when  (timelimit knowledge assessment)
+                       `("The assessment has a time limit. "
+                          ,(when (started knowledge)
+                                 (let ((remaining
+                                        (clews.assessment:time-remaining
+                                         knowledge assessment)))
+                                   (if (<= remaining 0)
+                                       "If you continue this assessment you will be exceeding the time limit. "
+                                       (format nil "You have only ~D seconds left to complete this assessment." remaining))))))))))
+
      ,(when (assessment-feedback-p knowledge assessment)
-            `(tr (td ((a :href ,(strcat path "feedback" ))
-                      "Feedback on your answers")))))))
+            `(tr (td ((a :href ,(funcall url "feedback"))
+                      "Feedback on your answers"))))
+     ,(when (assessment-reset-p knowledge assessment)
+            `(tr (td ((a :href ,(funcall url "reset" ))
+                      "Reset assessment for a new attempt."))))))))
 
 
 (defun countdown-html(remaining)
