@@ -525,14 +525,9 @@ using the mark-form"))
       (ol
        ,@(mapcar
             #'(lambda(q)
-                `(li (p ,(getf q :text))
-                     (p ((input :name ,(name question)
-                                :align :right
-                                :disabled t
-                                :datatype ,(getf q :type)
-                                :size ,(getf q :size 12)
-                                :value ,(getf q :answer)))
-                         ,(getf q :suffix ""))
+                `(li (p ,(getf q :question))
+                     (p ,(jarw.parse::format-output (getf q :type) (getf q :answer))
+                        ,(getf q :suffix ""))
                         ,(getf q :feedback)))
             (parts question)))
       (p (b "Feedback"))
