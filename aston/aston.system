@@ -1,0 +1,50 @@
+;;;; -*- lisp -*-
+;;;; $Id: aston.system,v 1.11 2005/02/06 11:03:16 willijar Exp $
+;;;; Copyright (C) 2003 Dr. John A.R. Williams, J.A.R.Williams@blueyonder.co.uk
+
+;;;; This file is part of the Aston EWAS application configuration
+
+;;;; This program is free software; you can redistribute it and/or modify
+;;;; it under the terms of the GNU General Public License as published by
+;;;; the Free Software Foundation; either version 2 of the License, or
+;;;; (at your option) any later version.
+
+;;;; This program is distributed in the hope that it will be useful,
+;;;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;;;; GNU General Public License for more details.
+
+;;;; You should have received a copy of the GNU General Public License
+;;;; along with this program; if not, write to the Free Software
+;;;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+;;;; or retreive a copy from http://www.gnu.org/licenses/gpl.txt
+
+(in-package :cl-user)
+
+(if (equal "edmund" (machine-instance))
+    (asdf:oos 'asdf:load-op :clsql-postgresql)
+  (asdf:oos 'asdf:load-op :clsql-postgresql-socket))
+
+(make:defsystem :aston
+  :source-pathname
+  (translate-logical-pathname "USER-LIB:src;www;aston;")
+  :binary-pathname
+  (translate-logical-pathname "USER-LIB:bin;www;aston;")
+  :source-extension "lisp"
+  :depends-on (:ewas :peer-review :data-collection :adaptive-tutor :db-manager
+	       :markup :dictionary :sql-dictionary :db-dictionary)
+  :components
+  ((:file "defpackage")
+   (:file "configuration" :depends-on ("defpackage"))
+   (:file "user"  :depends-on ("configuration"))
+   (:file "server"
+	  :depends-on ("configuration" "peer-review"
+		       "adaptive-tutor" "forms" "directory"))
+   (:file "directory" :depends-on ("configuration") )
+   (:file "forms" :depends-on ("configuration" "defpackage") )
+   (:file "adaptive-tutor" :depends-on ("configuration") )
+   ;(:file "applications" :depends-on ("configuration") )
+   #+nil(:file "publications")
+   (:file "peer-review" :depends-on ("configuration") )
+   (:file "misc" :depends-on ("adaptive-tutor" "forms" "peer-review"))   ))
+

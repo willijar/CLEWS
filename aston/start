@@ -1,0 +1,2 @@
+#!/bin/sh
+screen -d -m lisp -init ~/dev/lisp/src/www/aston/aston.init

@@ -1,0 +1,20 @@
+;; -*- lisp -*-
+(setq ext:*gc-verbose* nil)
+(setf (ext:search-list "home:") '("/home/willijar/dev/lisp/"))
+      
+(setf (logical-pathname-translations "USER-LIB")
+      '(("SYS;" "/home/willijar/dev/lisp/sys/")
+	("BIN;*;*" "/home/willijar/dev/lisp/bin/*/**/")
+	("SRC;*;*" "/home/willijar/dev/lisp/src/*/**/")
+	("BIN;*;*;*" "/home/willijar/dev/lisp/bin/*/*/**/")
+	("SRC;*;*;*" "/home/willijar/dev/lisp/src/*/*/**/")
+	("BIN;*;*;*;*" "/home/willijar/dev/lisp/bin/*/*/*/**/")
+	("SRC;*;*;*;*" "/home/willijar/dev/lisp/src/*/*/*/**/")
+	))
+(make:add-registry-location (translate-logical-pathname "USER-LIB:SYS;"))
+
+(pushnew (translate-logical-pathname "USER-LIB:SYS;") asdf:*central-registry*)
+
+(mk:compile-system "aston")
+(in-package :aston)
+(run)

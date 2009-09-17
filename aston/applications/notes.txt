@@ -1,0 +1,24 @@
+Page Layout
+
+----------------------------------------------------------------
+School etc Header						|
+Postgraduate Programme Application Form				|
+----------------------------------------------------------------
+Welcome               Form Title                          Help	|
+								|
+Name								|
+----------------						|
+Forms           |		The form			|
+----------------|						|
+Personal       *|						|
+Application    *|						|
+Qualifications  |						|
+Experience      |						|
+Referees        |						|
+----------------						|
+* Completed     |				------		|
+----------------			       | Save |		|
+						------		|
+								|
+---------------------------------------------------------------
+Footer
