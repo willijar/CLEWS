@@ -22,7 +22,6 @@
   (:import-from :jarw.io  #:write-log)
   (:import-from :jarw.parse #:format-time #:parse-time)
   (:import-from :jarw.lib #:when-bind #:while)
-  (:import-from :inet.smtp #:*smtp-server* #:send-mail)
   (:import-from :clews.form #:defform #:submitted-action #:form-data
                 #:make-form #:markup-form)
   (:import-from :inet.uri #:url #:merge-url)
