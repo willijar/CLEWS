@@ -14,13 +14,6 @@
    (smtp-account :type string :initarg :smtp-account
                  :reader smtp-account
                  :documentation "Account on server from which email is to be sent")
-   (smtp-server :type string :initarg :smtp-server
-                :initform *smtp-server*
-                :reader smtp-server
-                :documentation "Server to use to send emails")
-   (smtp-port :type fixnum :initarg :smtp-port
-              :initform 25 :reader smtp-port
-              :documentation "Port to use for smtp")
    (recipients :type list :initarg :recipients
                :initform '()
                :documentation "an ordered a-list mapping urls prefixes to email addresses - should finish with (\"\" . default)"))
@@ -57,8 +50,6 @@
                 (list to username)
                 subject
                 body
-                :server (smtp-server self)
-                :port (smtp-port self)
                 :signature "Web Bug Report"
                 :headers headers)
                '(p (em "Your report has been successfully sent,
