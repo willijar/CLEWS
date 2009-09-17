@@ -50,7 +50,7 @@
   (let* ((reader (make-instance 'rst-reader))
          (writer (make-instance 'html-writer))
          (docutils.writer.html::*section-level* 2))
-    (setf (docutils:document writer) (docutils:read-document msg reader))
+    (docutils:visit-node writer (docutils:read-document msg reader))
     (with-output-to-string(os)
       (docutils:write-part writer 'docutils.writer.html:body os))))
 
