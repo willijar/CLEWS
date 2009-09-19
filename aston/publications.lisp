@@ -277,7 +277,9 @@ count)
                           (search author (fieldvalue :author rec)))))))
 
 (defun pub-no-pages(rec)
-  (let* ((pages (httpd::split-string (fieldvalue :pages rec) 3 '(#\-)) ))
+  (let* ((pages (jarw.string:split-string
+                 (fieldvalue :pages rec)
+                 :count 3 :delimiter #\- :remove-empty-subseqs t) ))
     (handler-case
 	(- (parse-integer (first (last pages)))
 	   (parse-integer (first pages)))
@@ -331,7 +333,7 @@ count)
     (ecase (response-code r)
       (200 #+nil(setq *default-cookies*
 		 (mapcar #'(lambda(set-cookie)
-			     (first (httpd::split-string set-cookie 2 '(#\;))))
+			     (first (httpd::split-string set-cookie :count 2 :delimiter #\;)))
 			 (response-header r :set-cookie))) t))))
 
 

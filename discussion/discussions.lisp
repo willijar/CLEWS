@@ -29,7 +29,7 @@
   (:documentation "Class discussion groups system"))
 
 (defmethod response-handler((app discussion-groups) request rest)
-  (let* ((args (split-string rest 4 '(#\/)))
+  (let* ((args (split-string rest :count 4 :delimiter #\/))
          (group-name (first args))
          (group (when group-name (group group-name (news-source app))))
          (msg (when (second args)

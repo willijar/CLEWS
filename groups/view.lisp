@@ -122,7 +122,7 @@ with given navigation menus"))
 (defmethod response-handler((module module) request rest)
   "Response handler provides application top level framework"
   (let* ((path (subseq rest 0 (position #\? rest)))
-         (parts (or (split-string path nil #(#\/ #\.)
+         (parts (or (split-string path :delimiter '(#\/ #\.)
                                   :remove-empty-subseqs nil)))
          (modules (list module)) ;; built up in reverse order from parts
          view)

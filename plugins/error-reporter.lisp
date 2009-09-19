@@ -45,7 +45,7 @@
                                (:cc . ,(user-preference
                                         :email self user
                                         (property user :email username))))))
-               (send-mail
+               (smtp:send-mail
                 (smtp-account self)
                 (list to username)
                 subject

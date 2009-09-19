@@ -62,7 +62,7 @@ Do NOT use your main university Unix password for general web site access."))
       (format t "Updated authentication for ~S" username)
       (typecase notify
         (string
-         (inet.rfc2821::send-mail
+         (send-mail
           "J.A.R.Williams@aston.ac.uk" username
           "New  Intranet Password for heisenberg.aston.ac.uk:8080"
           (format nil notify  username new))

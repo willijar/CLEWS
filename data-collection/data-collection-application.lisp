@@ -18,8 +18,8 @@
 	      (delete id (forms app) :key #'car :test #'equal))))
 
 (defmethod response-handler((app data-collection-application) request rest)
-  (let* ((parts (split-string (first (split-string rest 2 #(#\?))) 3
-			      #(#\\ #\/ #\.)))
+  (let* ((parts (split-string (first (split-string rest 2 #(#\?))) :count 3
+			      :delimiter '(#\\ #\/ #\.)))
 	 (form (cdr (assoc (first parts) (forms app) :test #'equal)))
 	 (action (second parts))
 	 (fmt (third parts)))

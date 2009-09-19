@@ -13,11 +13,10 @@
     :author "Dr. John A.R. Williams"
     :version "0.1"
     :licence "GPL"
-    :depends-on (:clews :inet :regex :docutils)
+    :depends-on (:clews :inet :regex :docutils :docutils.extensions)
     :components
     ((:file "defpackage")
      (:file "group" :depends-on ("defpackage"))
-     (:file "discussions" :depends-on ("group" "user"))
+     (:file "discussions" :depends-on ("group" "user" "formatting"))
      (:file "formatting" :depends-on ("defpackage"))
-     (:file "user"  :depends-on ("defpackage"))
-     #+nil(:file "discussion-groups" :depends-on ("defpackage" "discussion"))))
+     (:file "user"  :depends-on ("defpackage"))))

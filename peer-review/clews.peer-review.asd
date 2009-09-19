@@ -12,7 +12,7 @@
   :author "Dr. John A.R. Williams"
   :version "0.1"
   :licence "GPL"
-  :depends-on (:clews :docutils)
+  :depends-on (:clews :docutils :docutils.extensions)
   :components
   ((:file "defpackage")
    (:file "peer-review-class"
@@ -27,4 +27,4 @@
    (:file "article"
           :depends-on ("defpackage" "article-class" "peer-review-class"))
    (:file "peer-review-handlers"
-          :depends-on ("permissions" "peer-review" "forms" "defpackage"))))
+          :depends-on ("permissions" "peer-review" "forms" "defpackage" "article"))))

@@ -21,11 +21,8 @@
 (defpackage :clews.form
   (:documentation "Generic form handling.")
   (:nicknames :form)
-  (:use :cl :markup)
+  (:use :cl :markup :data-format-validation)
   (:import-from :inet.http #:request #:form-values)
-  (:import-from :jarw.string #:split-string)
-  (:import-from :jarw.parse #:parse-number #:parse-time #:format-time
-                #:parse-input #:invalid-input #:format-output )
   (:import-from :jarw.math #:mean #:stddev)
   (:import-from :jarw.lib #:when-bind)
   (:export #:defform #:make-form #:register-form #:markup-form #:find-form

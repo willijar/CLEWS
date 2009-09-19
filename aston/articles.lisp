@@ -7,6 +7,8 @@
 
 (in-package :aston)
 
+(setf clews.articles::*document-error-hook #'invoke-debugger)
+
 (defvar *articles*
   (make-instance
    'clews.articles:tutorial-collection

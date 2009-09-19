@@ -94,7 +94,7 @@ which urls"))
                     (annotation (second item)))
                 (when annotation
                   `((p ,(first annotation) (br)
-                     (em ,username " " ,(jarw.parse:format-time
+                     (em ,username " " ,(data-format-validation::format-time
                                          nil (second annotation)
                                          :fmt :date-only)))))))
           (sort (mapcan #'(lambda(item)

@@ -35,7 +35,7 @@
                 #:node #:compound #:copy-of-node #:move-children #:as-text
                 #:strip)
   (:import-from :docutils.parser.rst #:def-directive #:*directives*
-                #:&allow-spaces #:&option #:&content-parser)
+                #:get-directive #:&allow-spaces #:&option #:&content-parser)
   (:import-from :markup #:div #:p #:rst #:b)
   (:export #:questionnaire #:question #:multiple-choice-question
            #:multiple-answer-question #:assessments
@@ -140,6 +140,11 @@ construct the question"))
   (make-instance 'dictionary:shadow-dictionary
                  :shadowing *directives*
                  :dictionary (make-hash-table :test #'equalp)))
+
+(defmethod get-directive(key (directives dictionary:dictionary))
+  (dictionary:get-dictionary key directives))
+(defmethod (setf get-directive)(value key (directives dictionary:dictionary))
+  (setf (dictionary:get-dictionary key directives) value))
 
 (def-directive questionnaire
     (parent name
@@ -379,7 +384,7 @@ construct the question"))
 (defmethod element-markup((element compound-q)
                           &optional (value (default-value element))
                           disabled error-msg)
-  (setq *tmp* element)
+  ; (setq *tmp* element) - useful for debugging
   (let ((text  (copy-of-node (text element))))
     (setf (slot-value text 'docutils:parent)
           (slot-value (text element) 'docutils:parent))

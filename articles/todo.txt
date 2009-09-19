@@ -1,18 +1,18 @@
 
-* go through EE401B and do assessments and check analysis
-
 * fix docutils bug
   http://heisenberg.aston.ac.uk:8080/discussions/aston.ee4000.2007/532
 
-* on emails indicate if an assessment is finished.
+* assessment deadlines - fix it to make it easy to update deadline for
+  specific student - use student as knowledge for article-assessments?
+
+* rss for users goals
 
 * more help notes for students
 
-* web dav access
+* edit access - download and upload file, change title, delete (if not
+  referred to).
 
 * note taking ability/discussion (article state storage??)
-
-* Latex output for docutils
 
 * write help notes for staff
 
@@ -22,4 +22,3 @@
 
 * in place audio/video file presentation
 
-* rss for users goals

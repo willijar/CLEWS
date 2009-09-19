@@ -133,8 +133,8 @@ by the forms submit buttons"))
                         (when (typep value-in 'condition)
                           (princ-to-string value-in)))
                        (value-out
-                        (if (typep value-in 'condition)
-                            (jarw.parse::value value-in)
+                        (if (typep value-in 'invalid-input)
+                            (invalid-input-value value-in)
                             value-in)))
                   (funcall element-markup element
                            value-out
@@ -229,8 +229,8 @@ by the forms submit buttons"))
                                         (default-value element)))
                         (error-msg (when (typep value-in 'condition)
                                      (princ-to-string value-in)))
-                        (value-out (if (typep value-in 'condition)
-                                       (jarw.parse::value value-in)
+                        (value-out (if (typep value-in 'invalid-input)
+                                       (invalid-input-value value-in)
                                        value-in)))
                    (cons 'li
                          (funcall element-markup element

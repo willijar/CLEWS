@@ -75,7 +75,8 @@ from the app"
 
 (defmethod response-handler((app assessment-application) request rest)
   (let* ((path (subseq rest 0 (position #\? rest)))
-         (parts (split-string  path 3 #(#\/ #\.) :remove-empty-subseqs t))
+         (parts (split-string
+                 path :count 3 :delimiter '(#\/ #\.) :remove-empty-subseqs t))
          (assessment (when (first parts)
                        (if (get-assessment (first parts) app)
                            (first parts)

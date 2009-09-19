@@ -27,11 +27,12 @@
                 #:search-dictionary #:logfile-dictionary
                 #:directory-dictionary #:deferrable-dictionary
                 #:with-delayed-updates #:child-dictionary)
+  (:import-from :data-format-validation
+                #:format-output #:parse-input #:date #:invalid-input
+                #:filename)
   (:import-from :jarw.parse
-                #:format-output #:parse-input #:date #:parsed-fields
-                #:standard-parsed-class #:parse-number #:field-value
-                #:field-values
-                #:unparsed-values #:filename #:invalid-input #:field-missing)
+                 #:parsed-fields #:standard-parsed-class #:field-value
+                #:field-values #:unparsed-values  #:field-missing)
   (:import-from :jarw.string #:split-string #:strcat)
   (:import-from :jarw.lib #:when-bind)
   (:import-from :jarw.debug #:debug-log #:debug-on #:debug-off)
@@ -44,7 +45,7 @@
                 #:settings)
   (:import-from :docutils.parser.rst  #:rst-reader #:recursive-rst-reader
                 #:def-directive #:&option #:&content)
-  (:import-from :docutils.writer.html #:html-writer)
+  (:import-from :docutils.writer.html #:html-writer-using-media-server)
   (:import-from :docutils.writer.latex #:latex-writer #:latex-output-stream)
   (:import-from :docutils.transform #:evaluate)
   (:import-from :rfc2822 #:skip-spaces #:token
@@ -59,7 +60,7 @@
   (:import-from :clews.form #:markup-form #:form-data)
   (:import-from :clews.assessment #:assessment-stub #:deadline-date
                 #:feedback-date #:default-deadline-date
-                #:default-feedback-date)
+                #:default-feedback-date #:assessment-student-status)
   (:import-from :jarw.search #:keywords #:keyword-index #:search-index
                 #:index #:unindex)
   (:import-from :clews :user)

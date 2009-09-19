@@ -424,7 +424,7 @@ of research for the purposes of this assessment."))))
         (let* ((initials
                 (mapcar #'(lambda(s) (aref s 0))
                         (split-string firstnames
-                                      nil #(#\space) :remove-empty-subseqs t)))
+                                      :remove-empty-subseqs t)))
                (author-initials
                 (mapcar #'(lambda(s) (aref s 0)) (butlast match)))
                (mismatch  (mismatch initials author-initials)))
@@ -666,7 +666,7 @@ written at end of file"))
 
 ;;;; TSV record handling for school publication database
 (defun pub-no-pages(rec)
-  (let* ((pages (split-string (getf rec :pages) 3 '(#\-)) ))
+  (let* ((pages (split-string (getf rec :pages) :count 3 :delimiter #\-) ))
     (handler-case
         (- (parse-integer (first (last pages)))
            (parse-integer (first pages)))

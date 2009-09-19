@@ -282,7 +282,7 @@ will be modified to include the plugins"
 
 (defun cookie-authentication-handler(app request rest &optional params)
   (let* ((cookie (cookie "authentication"  request))
-         (fields (when cookie (split-string cookie 2 '(#\:))))
+         (fields (when cookie (split-string cookie :count 2 :delimiter #\:)))
          (uid (first fields))
          (digest (second fields)))
     (unless

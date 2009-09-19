@@ -1,6 +1,6 @@
 ;;;; CLEWS Discussion System
 ;;;; Copyright (C) 2004-2005 John A.R. Williams <J.A.R.Williams@jarw.org.uk>
-;;;; Released under the GNU General Public License (GPL) 
+;;;; Released under the GNU General Public License (GPL)
 ;;;; See <http://www.gnu.org/copyleft/gpl.html> for license details
 ;;;;
 ;;;; $Id: defpackage.lisp,v 1.1 2006/08/21 07:12:02 willijar Exp $

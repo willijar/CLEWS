@@ -8,8 +8,8 @@
   :author "Dr. John A.R. Williams"
   :version "0.1"
   :licence "GPL"
-  :depends-on (:jarw :media :clews :docutils :inet :clews.assessment
-               :flexi-streams)
+  :depends-on (:jarw :media :clews :docutils :docutils.extensions :inet
+              :clews.assessment :flexi-streams)
   :components
   ((:file "defpackage")
    (:file "docutils" :depends-on ("defpackage"))

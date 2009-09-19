@@ -806,17 +806,21 @@ Learning and Teaching and Assessment Strategies to enable outcomes to be achieve
 
 (defun outcomes*(m)
   (mapcar
-   #'(lambda(o) (cons (intern (string-upcase (outcome-type o)) :keyword) (description o)))
+   #'(lambda(o) (cons (intern (string-upcase (outcome-type o)) :keyword)
+                      (description o)))
    (module-outcomes m)))
 
 (defgeneric write-curriculum-map(entity &key stream)
-  (:documentation "Output the curriculum map in latex format for the given entity"))
+  (:documentation "Output the curriculum map in latex format for the
+  given entity"))
 
 (defgeneric write-module-table(entity &key stream)
-  (:documentation "Write the module table for entity in latex format to stream"))
+  (:documentation "Write the module table for entity in latex format
+  to stream"))
 
 (defgeneric write-outcomes-tables(entity &key stream)
-  (:documentation "Write out the outcomes table in latex format for entity"))
+  (:documentation "Write out the outcomes table in latex format for
+  entity"))
 
 (defmethod write-curriculum-map((modules list) &key (stream *standard-output*))
   (let ((curriculum (curriculum modules)))

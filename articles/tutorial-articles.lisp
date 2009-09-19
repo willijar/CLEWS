@@ -48,7 +48,7 @@
                                    &key &allow-other-keys)
     (let ((weights nil))
       (cl-ppcre:do-register-groups (id weight) ('article-id-weight value)
-        (push (cons (unquoted id) (parse-number  weight))
+        (push (cons (unquoted id) (parse-input 'number  weight))
               weights))
       (nreverse weights)))
 

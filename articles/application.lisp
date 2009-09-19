@@ -156,7 +156,7 @@ article return article menus on second row")
 
 (defmethod response-handler((app clews-articles) request path)
   "Default response - an article path."
-  (let* ((parts (split-string path 2 #(#\/)))
+  (let* ((parts (split-string path :count 2 :delimiter #\/))
          (articleid (first parts))
          (action (or (second parts) "view"))
          (user *current-user*)
@@ -416,13 +416,10 @@ and the role allowed to see it")
          #'(lambda(e) `(markup:li ,(format nil "~A" e)))
          (errors article)))))))
 
-(defvar *form* nil)
-(defvar *request* nil)
 (defgeneric article-edit(article request)
   (:documentation "Edit interface for an article")
   (:method ((article article) request)
     (let ((form (article-form article)))
-      (setf *form* form *request* request)
       (if (clews.form::submitted-action form request)
           (multiple-value-bind(data condition)
               (form-data form request)
@@ -443,6 +440,31 @@ updated. Please ammend and resubmit.")))
           `((markup:h1  ,(title article))
             ,@(article-error-section article request)
             ,form)))))
+
+(defgeneric article-download(article request)
+  (:documentation "Dowload the complete article text for editing")
+  (:method((article article) request)
+    (throw 'inet.http::response
+      (make-instance 'inet.http::response
+                     :content-type "text/restructured"
+                     :content (path article)))))
+
+(defgeneric article-upload(article request)
+  (:documentation "Form to upload article text")
+  (:method((article article) request)
+    (let ((form
+           '((markup:form :method :post :enctype "multipart/form-data")
+             (markup:p "Select File to Upload "
+                       ((markup:input :type "file" :name "file" :size 60))
+              ((markup:input :type "submit" :name "Upload" :value "Upload")))))
+          (file  (first (clews.form::form-values "file" request))))
+      (when file
+        (with-open-file(os (path article) :direction :output :if-exists :supersede)
+          (write-string (cdr file) os))
+        (update-instance-from-record article))
+      `((markup:h1 "Upload file \"" ,(title article) "\"")
+        ,form
+         ,@(article-error-section article request)))))
 
 (defgeneric article-delete(article request)
   (:documentation "Edit interface for an article")
@@ -656,7 +678,15 @@ function. Row values are determnined by calling rowfun on rows"
    (make-action
        :name "visits" :permission :edit :handler #'visits-report
        :label "Visits Report"
-       :description "Report on visits to this article")))
+       :description "Report on visits to this article")
+   (make-action
+       :name "article.rst" :permission :edit :handler #'article-download
+       :label "Download Article"
+       :description "Download the entire article text")
+   (make-action
+    :name "upload" :permission :edit :handler #'article-upload
+    :label "Upload Article"
+    :description "Upload the entire article text")))
 
 (defgeneric new-articles-section(articles request)
   (:method ((articles article-collection) request)

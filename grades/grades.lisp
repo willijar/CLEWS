@@ -506,7 +506,7 @@ carry a credit value and the actual mark obtained by the student.")
   "Top levvel staff assessments display handler - parse rest and call
 method as required"
   (let* ((parts (when (> (length rest) 0)
-                  (split-string rest 3 '(#\/ #\? #\#)
+                  (split-string rest :count 3 :delimiter '(#\/ #\? #\#)
                                 :remove-empty-subseqs t)))
          (assessmentid (first parts))
          (studentid (if (has-permission '(:tutor :admin) app)
@@ -851,7 +851,7 @@ assessment"
   "Top levvel modules display handler - parse rest and call
 method as required. Takes moduleid and either a year or studentid"
   (let* ((parts (when (> (length rest) 0)
-                  (split-string rest 3 '(#\/ #\? #\#)
+                  (split-string rest :count 3 :delimiter '(#\/ #\? #\#)
                                 :remove-empty-subseqs t)))
          (tutor-p (has-permission '(:tutor :admin) app))
          (moduleid (first parts))

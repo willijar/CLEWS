@@ -351,7 +351,7 @@ until you have submitted some content")
 
 (defmethod delete-review-handler((app peer-review) request rest)
   (multiple-value-bind (id review-author)
-      (values-list (split-string rest nil "/"))
+      (values-list (split-string rest :delimiter #\/))
     (let ((article (get-article id app))
           (user (remote-user request))
           (review (get-review app id review-author)))

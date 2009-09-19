@@ -40,7 +40,7 @@ peer review"))
       (setf (docutils:attribute node :uri)
             (concatenate 'string prefix (docutils:attribute node :uri))))))
 
-(defclass peer-review-html-writer(docutils.writer.html:html-writer)
+(defclass peer-review-html-writer(docutils.writer.html:html-writer-using-media-server)
   ()
   (:documentation ""))
 

@@ -237,7 +237,7 @@ a url to the student details."))
   (let* ((args (split-string
                 (let ((p (position #\? rest)))
                   (if p (subseq rest 0 p) rest))
-                2 '(#\/) :remove-empty-subseqs t))
+                :count 2 :delimiter #\/ :remove-empty-subseqs t))
          (id (first args)))
     (cond ((and id (> (length id) 0)) (project-display-handler app request id))
           (t (home-handler app request rest)))))

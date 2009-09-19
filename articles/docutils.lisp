@@ -20,6 +20,10 @@
   ()
   (:documentation "Specialisation parser for articles"))
 
+(defmethod docutils::read-document(source (reader article-rst-reader))
+  (let ((docutils.parser.rst::*default-reader-package* (find-package :markup)))
+    (call-next-method)))
+
 (defmethod transforms((reader article-rst-reader))
   (nconc (list 'docutils.transform:fignum)
          (call-next-method)))
@@ -29,7 +33,7 @@
    (errors :initarg :show-errors :reader errors :initform nil :type boolean))
   (:documentation "Mix in for article docutils writers"))
 
-(defclass article-html-writer(html-writer article-writer)
+(defclass article-html-writer(html-writer-using-media-server article-writer)
   ()
   (:documentation "Article specific writer does not output errors"))
 
@@ -105,7 +109,8 @@ list of part names, write these sections to the streams")
             (package symbol :markup)
             &content content)
   (let ((language (intern (string-upcase language) :keyword))
-        (*package* (or (find-package package) (find-package :markup))))
+        (*package* (or (find-package package)
+                       docutils.parser.rst::*default-reader-package*)))
   (if content
       (let ((content
              (with-output-to-string(os)
@@ -127,7 +132,7 @@ without caching."
   (if (slot-boundp node 'evaluation)
       (slot-value node 'evaluation)
       (ecase (language node)
-        (:lisp (eval (content node))))))
+        (:lisp (funcall docutils.transform::*evaluator* (content node))))))
 
 (defmethod evaluate((node evaluation))
   "Reevaluate and Cache node"

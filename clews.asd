@@ -10,11 +10,11 @@
   :name "CLEWS"
   :description "Common Lisp Educational Web System (CLEWS)"
   :author "Dr. John A.R. Williams"
-  :version "0.1"
-  :licence "GPL"
+  :version "0.2"
+  :licence "GPL v3"
   :long-description "A web application framework for dynamic
 educational web based applications"
-  :depends-on (:regex :jarw :inet :inet.http :md5
+  :depends-on (:jarw :inet :inet.http :md5
                       :markup :dictionary :clews.form)
   :components
   ((:file "defpackage")
