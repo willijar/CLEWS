@@ -19,8 +19,8 @@
 
 ;;; external interface
 
-(defvar *document-error-hook*  nil
-  "When *document-error-hook* is non-nil it is called prior to normal handlking of document errors")
+(defvar *document-error-hook* nil "Called when there is an error in
+parsing a document")
 
 (defgeneric id(article)
   (:documentation "Return a unique id for this article in its collection"))
