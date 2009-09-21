@@ -56,6 +56,8 @@
                          content))))
    form))
 
+(defgeneric home-handler(app request rest))
+
 (defmethod response-handler((app peer-review) request rest)
   (when (or (= (length rest) 0) (string-equal rest ".")) ; Netscape 4 does this
     (return-from response-handler (home-handler app request rest)))
