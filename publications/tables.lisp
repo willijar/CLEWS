@@ -546,12 +546,12 @@ of research for the purposes of this assessment."))))
 
 (defun string-or-number<(a b)
   (handler-case
-      (< (jarw.parse::parse-number a) (jarw.parse::parse-number b))
+      (< (parse-number a) (parse-number b))
     (error(c) (declare (ignore c)) (string< a b))))
 
 (defun string-or-number>(a b)
   (handler-case
-      (> (jarw.parse::parse-number a) (jarw.parse::parse-number b))
+      (> (parse-number a) (parse-number b))
     (error(c) (declare (ignore c)) (string> a b))))
 
 (defmethod table-sort-func((term list) (table table-dictionary))
