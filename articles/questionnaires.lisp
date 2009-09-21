@@ -79,7 +79,9 @@ construct the question"))
   (let ((copy (copy-of-node node)))
     (setf (slot-value copy 'docutils:parent)
           (slot-value node 'docutils:parent))
-    (docutils.transform:evaluate copy)))
+    (docutils:transform
+     (make-instance 'docutils.transform:evaluate-transform :node copy))
+    copy))
 
 (defmethod factory((spec question-specification))
   (unless (slot-boundp spec 'factory)
@@ -319,7 +321,7 @@ construct the question"))
   ()
   (:documentation "An RST multiple choice question"))
 
-(defclass question-input(docutils.nodes::evaluate)
+(defclass question-input(docutils.nodes:inline-evaluation)
   ()
   (:documentation "An node representing user input"))
 
@@ -327,27 +329,27 @@ construct the question"))
   (handler-case
       (make-instance
        'question-input
-       :expr (let ((res nil)
-                   (p 0))
-               (loop
-                  (multiple-value-bind(s np)
-                      (read-from-string text nil '_end :start p)
-                    (when(eql s '_end) (return (nreverse res)))
-                    (setf p np)
-                    (push s res)))))
+       :expression (let ((res nil)
+                         (p 0))
+                     (loop
+                        (multiple-value-bind(s np)
+                            (read-from-string text nil '_end :start p)
+                          (when(eql s '_end) (return (nreverse res)))
+                          (setf p np)
+                          (push s res)))))
     (error(e)
       (make-node 'docutils.nodes::problematic
                  (write-to-string e :escape nil :readably nil )))))
 
-(defmethod docutils.transform:evaluate((node question-input))
+(defmethod docutils:evaluate((node question-input))
   (unless (slot-boundp node 'docutils::result)
     (setf (slot-value node 'docutils::result) nil)
     (handler-case
         (loop
-           :for a :on (slot-value node 'docutils::expr) :by #'cddr
+           :for a :on (slot-value node 'docutils::expression) :by #'cddr
            :do
            (setf (getf (slot-value node 'docutils::result) (first a))
-                 (eval (second a))))
+                 (funcall docutils::*evaluator* (second a))))
       (error(e)
         (docutils:report
          :warn (write-to-string e :escape nil :readably nil ) ))))
