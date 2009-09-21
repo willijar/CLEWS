@@ -276,7 +276,7 @@ firstname"
          (first (student-records
                  *db* 'year year
                  (if (studentid-p id) 'studentid 'username) id))))
-   r (unless student (error "No student ~S found." id))
+    (unless student (error "No student ~S found." id))
     (format *terminal-io* "~%Student ~A~%" student)
     (flet ((get-field(slot message &optional type)
              (let ((default (when (slot-boundp student slot)
