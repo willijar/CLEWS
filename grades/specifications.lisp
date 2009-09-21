@@ -874,7 +874,7 @@ Learning and Teaching and Assessment Strategies to enable outcomes to be achieve
         (when stage (finish-table))
         (setf stage (stage module))
         (format stream "\\begin{structure-table}{Stage ~A}~%"
-                (jarw.string::to-roman stage)))
+                (format-output 'roman stage)))
       (incf total-credits (credits module))
       (format stream "~A & ~A & ~A & ~A & Core\\\\~%"
               (title module)

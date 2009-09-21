@@ -164,19 +164,19 @@ a url to the student details."))
      (tr
       ((th :align :right) "Start Date")
       (td ((input :name :start-date :size 35
-                  :value ,(jarw.parse:parse-time "2007-04-04 09:00")
-                  :datatype (jarw.parse:date :nil-allowed t :fmt :short))))
+                  :value ,(parse-time "2007-04-04 09:00")
+                  :datatype (date :nil-allowed t :fmt :short))))
       (td "Date student started project"))
      (tr
       ((th :align :right) "Submission Deadline")
       (td ((input :name :deadline-date :size 35
-                  :value ,(jarw.parse:parse-time "2007-09-29 17:00")
-                  :datatype (jarw.parse:date :nil-allowed t :fmt :short))))
+                  :value ,(parse-time "2007-09-29 17:00")
+                  :datatype (date :nil-allowed t :fmt :short))))
       (td "Submission deadline for project including any extensions"))
      (tr
       ((th :align :right) "Submitted")
       (td ((input :name :submission-date :size 35
-                  :datatype (jarw.parse:date :nil-allowed t :fmt :short) )))
+                  :datatype (date :nil-allowed t :fmt :short) )))
       (td "Date student submitted project"))
      ,@(mapcan
         #'(lambda(module-mark)
@@ -474,8 +474,8 @@ listing"
           ((td :align :right)
            ,(format-percentage (mark m)))
           (td ,(assessor-choice-field app project m))
-          (td ,(jarw.parse::format-output
-                'jarw.parse::date (deadline-date m))) ))))
+          (td ,(format-output
+                'date (deadline-date m))) ))))
    marks))
 
 (defun assessors-update(app data marks)
