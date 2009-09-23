@@ -296,9 +296,7 @@ until you have submitted some content")
             (progn
               (when (not (content article))
                 (setf (slot-value article 'author) username))
-              (setf (slot-value article 'content)
-                    (scan-content-for-new-topics
-                     app (getf data :content) username))
+              (setf (slot-value article 'content) (getf data :content))
               (setf (slot-value article 'anonymous) (getf data :anonymous))
               (setf (slot-value article 'title) (getf data :title))
               (setf (slot-value article 'created) (get-universal-time))

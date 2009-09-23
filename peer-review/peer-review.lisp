@@ -377,19 +377,6 @@ p-list with atttributes :mark :raw-mark :no-articles :no-reviews
                title-hash)
       duplicates)))
 
-(defmethod scan-content-for-new-topics((app peer-review) content username)
-  "Scans content, creating new nodes in app where applicable. returns content
-   with markup removed."
-  (regex:regex-substitute-string
-   (load-time-value
-    (regex:compile-str "#\\{[:space:]*(.+?)[:space:]*\\}") t)
-   content
-   (list #'(lambda(regs)
-             (unless (articles-with-title app (elt regs 1))
-               (add-article app (generate-new-article-id app)
-                            :title (elt regs 1) :author username))
-             (elt regs 1) ))))
-
 (defmethod authors((app peer-review))
   "Return list of all authors of articles"
   (delete-duplicates
