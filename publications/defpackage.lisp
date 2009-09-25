@@ -14,7 +14,7 @@
   (:import-from :jarw.lib #:when-bind)
   (:import-from :data-format-validation
                 #:parse-number #:parse-input #:format-time
-                #:is-nil-string #:invalid-input)
+                #:is-nil-string #:invalid-format)
   (:import-from :jarw.parse #:is-prefix-p)
   (:import-from :jarw.properties #:property-subset #:property)
   (:import-from :clews.table #:table-row-markup)

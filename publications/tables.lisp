@@ -208,8 +208,8 @@ of research for the purposes of this assessment.")))
           :name :id
           :datatype ,#'(lambda(s)
                          (when (get-dictionary s table)
-                           (invalid-input
-                            s "Record with this key already in table"))
+                           (error 'invalid-format 'id
+                            :type s :value "Record with this key already in table"))
                          s)
           :value ,(generate-key table nil))))
       (:journal
@@ -385,8 +385,8 @@ of research for the purposes of this assessment."))))
                 (not (eql (char s 4) #\-))
                 (notevery #'digit-char-p (subseq s 0 4))
                 (notevery #'digit-char-p (subseq s 5 9)))
-        (invalid-input
-         s "ISSN does is not in the required format dddd-dddd"))
+        (error 'invalid-format :type spec :value s
+               :reason "ISSN does is not in the required format dddd-dddd"))
       s)))
 
 (defun split-authors(authors)
@@ -405,7 +405,8 @@ of research for the purposes of this assessment."))))
   (let* ((s (substitute  #\space #\.
                          (string-trim '(#\Space #\Tab #\Newline) s))))
     (when (is-nil-string s)
-      (invalid-input s "Author list cannot be empty"))
+      (error 'invalid-format :type spec :value s
+             :reason "Author list cannot be empty"))
     (let ((authors (split-authors s)))
       (if (rest authors)
           (let* ((end (last authors 2))
