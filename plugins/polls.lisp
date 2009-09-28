@@ -21,8 +21,7 @@
                                                 choices))))
 
 (defun description(poll) (getf poll :text))
-(defun deadline(poll) (jarw.parse:format-time nil
-                                              (getf poll :deadline) :fmt :short))
+(defun deadline(poll) (format-time nil (getf poll :deadline) :fmt :short))
 (defun choices(poll) (getf poll :choices))
 (defun casters(poll) (getf poll :casters))
 (defun no-votes-caste(poll) (reduce #'+ (choices poll) :key #'cdr))
