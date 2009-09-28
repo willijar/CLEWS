@@ -258,7 +258,7 @@ of research for the purposes of this assessment.")))
                 tag
                 (progn
                   (when (eql (getf attr :datatype) 'string)
-                    (setf (getf attr :datatype) '(string :word-count 1)))
+                    (setf (getf attr :datatype) '(string :min-word-count 1)))
                   attr)
                 content) markup)
              markup)))))
@@ -347,10 +347,10 @@ of research for the purposes of this assessment.")))
 (defvar *journal-fields*
   '((:abbreviation
      "The abbreviated title, often used in citations"
-     ((input :size 80 :datatype (string :word-count 1))))
+     ((input :size 80 :datatype (string :min-word-count 1))))
     (:title
      "The full expanded title of the journal"
-     ((input :size 80 :datatype (string :word-count 1))))
+     ((input :size 80 :datatype (string :min-word-count 1))))
     (:issn
      "The ISSN code for the journal"
      ((input :size 9 :datatype (issn :nil-allowed t))))
