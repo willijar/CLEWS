@@ -59,7 +59,7 @@ Do NOT use your main university Unix password for general web site access."))
       (map 'null #'(lambda(authenticator)
                      (change-credentials new username authenticator))
            authenticators)
-      (format t "Updated authentication for ~S" username)
+      (format t "Updated authentication for ~S~%" username)
       (typecase notify
         (string
          (send-mail

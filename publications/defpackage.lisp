@@ -13,7 +13,7 @@
   (:import-from :split-sequence #:split-sequence)
   (:import-from :jarw.lib #:when-bind)
   (:import-from :data-format-validation
-                #:parse-number #:parse-input #:format-time
+                 #:parse-input #:date
                 #:is-nil-string #:invalid-format)
   (:import-from :jarw.parse #:is-prefix-p)
   (:import-from :jarw.properties #:property-subset #:property)

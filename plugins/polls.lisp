@@ -14,14 +14,14 @@
         :closed nil
         :deadline (ctypecase deadline
                     (integer deadline)
-                    (string (parse-time deadline)))
+                    (string (parse-input 'date deadline)))
         :choices (make-array (length choices)
                              :initial-contents (mapcar
                                                 #'(lambda(c) (cons c 0))
                                                 choices))))
 
 (defun description(poll) (getf poll :text))
-(defun deadline(poll) (format-time nil (getf poll :deadline) :fmt :short))
+(defun deadline(poll) (parse-input 'date (getf poll :deadline) :fmt :short))
 (defun choices(poll) (getf poll :choices))
 (defun casters(poll) (getf poll :casters))
 (defun no-votes-caste(poll) (reduce #'+ (choices poll) :key #'cdr))

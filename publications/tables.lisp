@@ -547,12 +547,12 @@ of research for the purposes of this assessment."))))
 
 (defun string-or-number<(a b)
   (handler-case
-      (< (parse-number a) (parse-number b))
+      (< (parse-input 'number a) (parse-input 'number b))
     (error(c) (declare (ignore c)) (string< a b))))
 
 (defun string-or-number>(a b)
   (handler-case
-      (> (parse-number a) (parse-number b))
+      (> (parse-input 'number a) (parse-input 'number b))
     (error(c) (declare (ignore c)) (string> a b))))
 
 (defmethod table-sort-func((term list) (table table-dictionary))
