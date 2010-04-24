@@ -235,7 +235,11 @@ values - data, headers definition and possibly cookies. If the data is
 a string it is written to a stream otherwise the render-page method is
 called. If plugins is true and value returned is markup the html body
 will be modified to include the plugins"
-  (let ((*current-user* (remote-user request)))
+  (let* ((*current-user* (remote-user request))
+         (*timezone*
+               (if (and *current-user* (not (stringp *current-user*)))
+                   (user-preference :timezone app *current-user* nil)
+                   *timezone*)))
     (if (and role (not (has-permission role app *current-user*)))
         :forbidden
         (multiple-value-bind (data headers no-plugins-p)
@@ -409,7 +413,7 @@ browser"))
            (tr (td)
                ((td :colspan 2)
                 ((input :type "submit" :value "Submit Credentials"))))))
-         ((p :class :error) (em "Firefox is the recommended broswer for using this web application. It is designed to web standards and not tested against bugs in other web browsers.")
+         ((p :class :error) (em "Firefox is the recommended broswer for using this web application. The site is not tested against bugs in other web browsers.")
 ))))))))
 
 (defmethod preference-handler ((app application) request rest)
@@ -490,6 +494,11 @@ plugin is too wide."
               ("400px" . "400 pixels")
               ("500px" . "500 pixels"))
      :default "200px")
+    (:timezone
+     :text "Enter your preferred timezone for date display (a null entry will result in the local time of the server being used)."
+     :markup ((input :size 3))
+     :type (integer :min -24 :max +24 :nil-allowed t)
+     :default nil)
     (:border
      :text "Border width seperating page areas"
      :markup ((input :size 2))
