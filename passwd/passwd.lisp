@@ -29,7 +29,7 @@ given a groupname")
     ("admin" ,#'admin-handler :stage :response :match :exact :role :admin)
     #+nil("group" ,#'group-handler :stage :response :match :exact :role :admin)))
 
-(defun reset-password(username authenticators &key (if-set :ask)
+(defun reset-password (username authenticators &key (if-set :ask)
                       (new-password (crypt::random-salt 8))
                       (notify
 "You have a new password for accessing the web services on
@@ -63,7 +63,10 @@ Do NOT use your main university Unix password for general web site access."))
       (typecase notify
         (string
          (send-mail
-          "J.A.R.Williams@aston.ac.uk" username
+          "J.A.R.Williams@aston.ac.uk"
+          (if (find #\@ username)
+              username
+              (concatenate 'string username "@aston.ac.uk"))
           "New  Intranet Password for heisenberg.aston.ac.uk:8080"
           (format nil notify  username new))
          (format t "Emailed authentication to ~S" username))
